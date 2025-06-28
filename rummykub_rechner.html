@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rummikub Punkte-Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: radial-gradient(ellipse 90% 70% at 60% 10%, #e0e7ff 0%, #93c5fd 70%, #2563eb 100%);
+      min-height: 100vh;
+      font-family: 'Inter', Arial, sans-serif;
+      color: #213045;
+    }
+    .glass {
+      background: rgba(255,255,255,0.86);
+      border-radius: 2rem;
+      box-shadow: 0 10px 40px #60a5fa44, 0 1.5px 8px #1e293b13;
+      backdrop-filter: blur(16px) saturate(1.07);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .apple-btn {
+      background: linear-gradient(90deg, #3b82f6 15%, #2563eb 100%);
+      border-radius: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: background 0.25s, box-shadow 0.25s, transform 0.13s;
+      box-shadow: 0 4px 16px #2563eb23;
+    }
+    .apple-btn:hover, .apple-btn:focus {
+      background: linear-gradient(90deg, #2563eb 10%, #60a5fa 90%);
+      box-shadow: 0 7px 24px #60a5fa33;
+      transform: scale(1.03);
+    }
+    /* Konfetti: optional, bei Bedarf */
+    @keyframes confetti-fall {
+      0% { transform: translateY(-60px) rotateZ(0); opacity: 1;}
+      100% { transform: translateY(600px) rotateZ(360deg); opacity: 0;}
+    }
+    .confetti {
+      position: fixed;
+      top: -60px;
+      width: 14px; height: 14px; border-radius: 4px;
+      opacity: .9; z-index: 60;
+      pointer-events: none;
+      animation: confetti-fall 1.7s linear forwards;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center w-full min-h-screen p-2">
+
+  <!-- Rechtlicher Hinweis: MODAL -->
+  <div id="legalModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="glass p-8 rounded-3xl shadow-2xl max-w-xl w-full flex flex-col items-center text-center animate-fadeIn" style="backdrop-filter: blur(22px) saturate(1.2);">
+      <h2 class="text-2xl font-bold mb-3 text-blue-800">Hinweis</h2>
+      <p class="mb-5 text-blue-900">
+        <strong>Dieser Rummikub Punkte-Tracker</strong> steht in <b>keinem Zusammenhang mit dem offiziellen Hersteller</b> oder Markeninhaber von Rummikub.<br>
+        Es handelt sich um ein unabhängiges Fan-Projekt zur Erleichterung der Punkteverwaltung.<br>
+        Die Nutzung erfolgt auf eigene Verantwortung. Es besteht keine Garantie auf Fehlerfreiheit.
+      </p>
+      <button onclick="closeLegalModal()" class="apple-btn w-full max-w-xs py-3 text-white text-lg shadow mt-2">Akzeptieren & Starten</button>
+    </div>
+  </div>
+
+  <!-- Startseite mit Spielname und Regeln -->
+  <div id="welcome" class="max-w-6xl mx-auto glass rounded-3xl shadow-xl p-6 mt-4 w-full">
+    <h1 class="text-3xl font-black text-center mb-6 text-blue-700 drop-shadow">Rummikub Punkte-Tracker</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Link: Spieler hinzufügen -->
+      <div>
+        <h2 class="text-xl font-semibold mb-4 text-blue-600">Spieler hinzufügen</h2>
+        <div id="playerInputs" class="space-y-2 mb-4">
+          <input type="text" placeholder="Spieler 1" class="w-full px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 focus:outline-blue-400 transition" oninput="addNextPlayerInput(this)">
+        </div>
+        <button onclick="startGame()" class="apple-btn w-full py-3 text-white text-lg shadow">Spiel starten</button>
+      </div>
+      <!-- Rechts: Regeln -->
+      <div>
+        <h2 class="text-xl font-semibold mb-4 text-blue-600">Regeln für Rummikub</h2>
+        <div class="overflow-y-auto h-[340px] space-y-2 text-sm text-blue-800 pr-2">
+          <p><strong>Ziel:</strong> Lege alle Steine zuerst ab & erhalte möglichst wenig Minuspunkte.</p>
+          <p>Es gibt 52 Steine in vier Farben (Schwarz, Blau, Rot, Gelb) mit Zahlen 1–13 (je zweimal) plus 2 Joker.</p>
+          <p>Jeder zieht 14 Steine (verdeckt), nur der Ziehende darf sie sehen.</p>
+          <p>Erste Auslage: Mindestens 30 Punkte mit Reihen (z.B. 4–5–6 in Blau) oder Gruppen (z.B. drei Siebener in versch. Farben).</p>
+          <p>Wer nicht auslegen kann, zieht einen Stein. Danach darf beliebig an- oder umgebaut werden, solange alles gültig bleibt.</p>
+          <p>Wer zuerst alle Steine ablegt, gewinnt. Alle übrigen Steine zählen als Minuspunkte (Joker = -30!), die der/die Gewinner:in als Pluspunkte bekommt.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spielbereich -->
+  <div id="game" class="hidden h-full w-full mt-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+      <!-- Eingabe (linke Seite) -->
+      <div class="glass rounded-3xl shadow-xl p-6 flex flex-col justify-between h-full min-h-[350px]">
+        <div id="roundInput" class="text-2xl font-semibold text-center mb-6"></div>
+        <div class="grid grid-cols-3 gap-3 text-2xl w-full max-w-md mx-auto mb-2">
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(1)">1</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(2)">2</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(3)">3</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(4)">4</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(5)">5</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(6)">6</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(7)">7</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(8)">8</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(9)">9</button>
+          <button class="py-5 bg-red-200 hover:bg-red-300 text-red-800 transition rounded-xl font-black" onclick="deleteNumber()">⌫</button>
+          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(0)">0</button>
+          <button class="py-5 bg-green-500 hover:bg-green-600 text-white font-black transition rounded-xl" onclick="confirmNumber()">OK</button>
+        </div>
+      </div>
+      <!-- Übersicht (rechte Seite) -->
+      <div class="glass rounded-3xl shadow-xl p-6 overflow-y-auto flex flex-col min-h-[350px]">
+        <div id="scoreboard" class="space-y-3 mb-4 text-xl font-semibold"></div>
+        <div id="roundHistory" class="mb-4 text-lg"></div>
+        <button onclick="endGame()" class="apple-btn w-full py-3 text-white text-lg shadow mt-auto">Spiel beenden & Statistik anzeigen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistik -->
+  <div id="statistics" class="hidden max-w-4xl mx-auto glass rounded-3xl shadow-xl p-8 mt-8 w-full">
+    <h1 class="text-2xl font-bold text-center mb-6 text-blue-700">Spielstatistik</h1>
+    <div id="finalScores" class="space-y-4 text-lg"></div>
+    <button onclick="location.reload()" class="apple-btn mt-8 w-full py-3 text-white text-lg shadow">Neues Spiel starten</button>
+  </div>
+
+<script>
+let players = [];
+let scores = [];
+let currentInputIndex = 0;
+let tempRound = [];
+let inputBuffer = '';
+let roundNumber = 1;
+
+// Rechtlicher Hinweis Modal Handling
+function closeLegalModal() {
+  document.getElementById('legalModal').style.display = 'none';
+}
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('legalModal').style.display = '';
+});
+
+// Spieler hinzufügen
+function addNextPlayerInput(input) {
+  const container = document.getElementById('playerInputs');
+  if (input.nextElementSibling === null && input.value.trim() !== '') {
+    const next = document.createElement('input');
+    next.type = 'text';
+    next.placeholder = `Spieler ${container.children.length + 1}`;
+    next.className = 'w-full px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 focus:outline-blue-400 transition';
+    next.oninput = () => addNextPlayerInput(next);
+    container.appendChild(next);
+  }
+}
+
+// Spielstart
+function startGame() {
+  players = [...document.querySelectorAll('#playerInputs input')]
+    .map(input => input.value.trim())
+    .filter(name => name !== '');
+  if (players.length < 2) {
+    alert("Bitte mindestens zwei Spieler eingeben.");
+    return;
+  }
+  scores = players.map(() => []);
+  document.getElementById('welcome').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  roundNumber = 1;
+  currentInputIndex = 0;
+  tempRound = [];
+  inputBuffer = '';
+  updateRoundInput();
+  updateScoreboard();
+  updateHistory();
+}
+
+// Eingabefeld
+function updateRoundInput() {
+  document.getElementById('roundInput').innerHTML = `
+    <div class="mb-2">Runde <strong>${roundNumber}</strong></div>
+    <div class="mb-2">Übrige Punkte für<br><span class="font-black text-blue-600">${players[currentInputIndex]}</span>:</div>
+    <span id='currentBuffer' class='text-4xl text-blue-700 font-mono select-all'>${inputBuffer === '' ? 0 : inputBuffer}</span>`;
+}
+
+// Zahleneingabe
+function appendNumber(num) {
+  if (inputBuffer.length > 3) return;
+  if (inputBuffer === '0') inputBuffer = '';
+  inputBuffer += num;
+  document.getElementById('currentBuffer').innerText = inputBuffer === '' ? 0 : inputBuffer;
+}
+
+// Löschen
+function deleteNumber() {
+  inputBuffer = inputBuffer.slice(0, -1);
+  document.getElementById('currentBuffer').innerText = inputBuffer === '' ? 0 : inputBuffer;
+}
+
+// Eingabe bestätigen
+function confirmNumber() {
+  // 0 ist gültig!
+  let value = (inputBuffer === '' ? 0 : parseInt(inputBuffer, 10));
+  if (!Number.isFinite(value) || value < 0) {
+    alert("Bitte gültige Punktzahl eingeben.");
+    inputBuffer = '';
+    updateRoundInput();
+    return;
+  }
+  tempRound.push(value);
+  inputBuffer = '';
+  currentInputIndex++;
+  if (currentInputIndex < players.length) {
+    updateRoundInput();
+  } else {
+    players.forEach((_, i) => scores[i].push(tempRound[i]));
+    roundNumber++;
+    currentInputIndex = 0;
+    tempRound = [];
+    updateScoreboard();
+    updateHistory();
+    updateRoundInput();
+  }
+}
+
+// Scoreboard Anzeige
+function updateScoreboard() {
+  const scoreboard = document.getElementById('scoreboard');
+  scoreboard.innerHTML = '';
+  players.forEach((player, i) => {
+    const totalScore = scores[i].reduce((a,b) => a+b,0);
+    scoreboard.innerHTML += `
+      <div class="flex items-center justify-between">
+        <span>${player}:</span>
+        <span class="text-2xl text-blue-800 font-black">${totalScore} Punkte</span>
+      </div>`;
+  });
+}
+
+// Rundenverlauf
+function updateHistory() {
+  const roundHistory = document.getElementById('roundHistory');
+  roundHistory.innerHTML = '<h2 class="text-xl font-semibold mb-2 text-blue-700">Rundenverlauf</h2>';
+  if (scores[0].length === 0) return;
+  for (let r = 0; r < scores[0].length; r++) {
+    const roundId = `runde-${r}`;
+    const line = document.createElement('div');
+    line.id = roundId;
+    line.className = 'mb-1 flex justify-between items-center';
+    line.innerHTML = `<div><strong>Runde ${r + 1}:</strong> ` + players.map((p, i) => `${p}: <span class="font-semibold text-blue-700">${scores[i][r]}</span>`).join(' | ') + '</div>';
+
+    const delBtn = document.createElement('button');
+    delBtn.innerText = '❌';
+    delBtn.className = 'ml-4 text-red-500 text-xl';
+    delBtn.onclick = () => deleteRound(r);
+    line.appendChild(delBtn);
+
+    roundHistory.appendChild(line);
+  }
+}
+
+// Runde löschen
+function deleteRound(index) {
+  players.forEach((_, i) => scores[i].splice(index, 1));
+  roundNumber = scores[0].length + 1;
+  updateScoreboard();
+  updateHistory();
+  updateRoundInput();
+}
+
+// Spielende
+function endGame() {
+  document.getElementById('game').classList.add('hidden');
+  document.getElementById('statistics').classList.remove('hidden');
+
+  const finalScores = players.map((player, i) => {
+    const total = scores[i].reduce((a, b) => a + b, 0);
+    const avg = (scores[i].length > 0 ? (total / scores[i].length).toFixed(2) : '—');
+    return { name: player, total, avg };
+  }).sort((a, b) => a.total - b.total);
+
+  const finalContainer = document.getElementById('finalScores');
+  finalContainer.innerHTML = '';
+  finalScores.forEach((entry, idx) => {
+    finalContainer.innerHTML += `
+      <div class="flex flex-col border p-4 rounded-lg ${idx === 0 ? 'bg-green-50' : 'bg-blue-50'}">
+        <div class="flex justify-between">
+          <span class="font-bold text-xl">${entry.name}</span>
+          <span class="text-xl text-blue-800 font-black">${entry.total} Punkte</span>
+        </div>
+        <div class="text-sm text-blue-700">Ø ${entry.avg} pro Runde ${idx === 0 ? '<span class="text-green-600 font-semibold">🏆 Gewinner</span>' : ''}</div>
+      </div>`;
+  });
+}
+</script>
+</body>
+</html>

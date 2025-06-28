@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pascal Asch – Spieleübersicht</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(120deg,#e0e7ff 0%,#f0faff 80%);
+      --aurora1: radial-gradient(ellipse 42% 24% at 16% 6%, #bde0fe 0%, #809fff 55%, transparent 100%);
+      --aurora2: radial-gradient(ellipse 40% 24% at 85% 18%, #7dd3fc 0%, #a5b4fc 80%, transparent 100%);
+      --aurora3: radial-gradient(ellipse 32% 24% at 50% 70%, #f0abfc 0%, #bae6fd 80%, transparent 100%);
+      --card-bg: rgba(255,255,255,0.82);
+      --card-blur: blur(19px);
+      --card-shadow: 0 4px 28px 2px #b4cafe24, 0 2px 12px 1px #a5b4fc1a;
+      --card-hover-shadow: 0 8px 50px 3px #72b1ff55, 0 3px 18px 1px #4f46e580;
+      --primary: #367fff;
+      --primary-gradient: linear-gradient(90deg,#4f8cff 5%,#1e90ff 90%);
+      --border: #c7d2fe;
+      --icon-color: #4f8cff;
+      --footer: #a1a1aa;
+    }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--bg-gradient), #f8fafc;
+      color: #222;
+      overflow-x: hidden;
+    }
+    .aurora-wrap {
+      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+      z-index: 0; pointer-events: none;
+    }
+    .aurora {
+      position: absolute; width: 100vw; height: 100vh; left: 0; top: 0;
+      z-index: 0; pointer-events: none;
+      background:
+        var(--aurora1),
+        var(--aurora2),
+        var(--aurora3);
+      animation: aurora-move 18s cubic-bezier(.45,.19,.24,1) infinite alternate;
+      opacity: 0.78;
+      filter: blur(2px) saturate(1.16);
+    }
+    @keyframes aurora-move {
+      0%   { background-position: 0% 0%, 100% 0%, 50% 80%;}
+      100% { background-position: 10% 10%, 90% 6%, 52% 92%;}
+    }
+    .container {
+      max-width: 1180px; margin: 0 auto;
+      padding: 0 36px; z-index: 2; position: relative;
+    }
+    .header-zone {padding-top:72px; padding-bottom:32px;}
+    .main-title {
+      font-size: 2.5rem; font-weight: 900;
+      background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text;
+      color: transparent; line-height:1.11;
+      text-shadow: 0 3px 16px #99bbff38;
+      letter-spacing: .02em; margin-bottom:5px; display:inline-block;
+    }
+    .subtitle {
+      font-size:1.22rem; font-weight:500; color:#4f8cff; letter-spacing:.01em;
+      opacity:.90; margin-bottom:0; margin-top:0; display:inline-block;
+      text-shadow: 0 2px 10px #b0cdfb13;
+    }
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 34px; margin: 0 auto 52px auto; width: 100%;
+      transition: gap .2s;
+    }
+    @media (min-width:1024px) { .games-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width:850px)  { .container {padding-left:8vw;padding-right:8vw;} .games-grid{gap:16px;} }
+    @media (max-width:620px)  { .container{padding-left:2vw;padding-right:2vw;} .games-grid{gap:9px;} }
+    .game-card {
+      position:relative; z-index:2;
+      background: var(--card-bg);
+      box-shadow: var(--card-shadow);
+      border: 1.5px solid var(--border);
+      border-radius: 1.7rem;
+      backdrop-filter: var(--card-blur);
+      padding: 32px 20px 26px 20px;
+      min-height: 192px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      cursor: pointer;
+      transition: box-shadow .18s, transform .18s, background .21s, border .17s;
+      overflow: visible;
+      opacity: 0.96;
+    }
+    .game-card:hover, .game-card:focus {
+      box-shadow: var(--card-hover-shadow);
+      transform: translateY(-4px) scale(1.028);
+      border: 1.7px solid #7dd3fc;
+      background: rgba(243,247,255,0.93);
+      opacity: 1;
+    }
+    .game-icon {
+      width: 52px; height: 52px;
+      margin-bottom: 15px; margin-top:3px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--icon-color); filter: drop-shadow(0 4px 18px #c7d2fe90);
+      font-size: 2.25rem;
+      background: linear-gradient(135deg,#e0e7ff 70%,#bcd1ff 100%);
+      border-radius: 20px;
+      box-shadow: 0 2px 12px #4f8cff18;
+    }
+    .game-title {
+      font-size:1.22rem;
+      font-weight:800;
+      color: var(--primary);
+      margin-bottom:7px;
+      letter-spacing:.01em;
+      text-shadow: 0 2px 7px #b0cdfb26;
+    }
+    .game-desc {
+      font-size: 1.07rem;
+      color: #3b4665; text-align: center; font-weight: 500;
+      line-height: 1.37; margin-bottom: 0; margin-top: 0;
+      letter-spacing: .005em;
+      text-shadow: 0 1px 6px #fff2;
+      opacity:.97;
+    }
+    .footer { text-align:center; color:var(--footer); margin:70px 0 18px 0; font-size:1.10rem; z-index:5; opacity:0.92;}
+    .toggle-btn {
+      position: fixed; right: 38px; top: 38px; z-index: 20;
+      background: #e8eef9; color: #3584e4;
+      border-radius: 99px; width: 46px; height: 46px; font-size: 1.35rem;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 12px #91a4e211; cursor: pointer;
+      border: none; outline: none; transition: background 0.15s, transform 0.13s, color 0.13s;
+    }
+    .toggle-btn:hover { background:#e1eaf7; color: #3178c6; transform: scale(1.08) translateY(-2px);}
+    .toggle-btn:active { background: #dbeafe; color:#2563eb; }
+    .darkmode {
+      background: linear-gradient(112deg, #1e293b 0%, #334155 100%);
+      color: #e3eaf9;
+    }
+    .darkmode .aurora { opacity: 0.44; filter: blur(6px) brightness(.93);}
+    .darkmode .main-title {background:linear-gradient(90deg,#60a5fa 15%,#c7d2fe 80%);}
+    .darkmode .subtitle {color:#7dd3fc;}
+    .darkmode .game-card { background: rgba(36,44,65,0.89); color: #f3f8fc; border: 1.5px solid #384f7a;}
+    .darkmode .game-title { color:#a5b4fc;}
+    .darkmode .game-icon {background: linear-gradient(135deg,#312e81 80%,#334155 100%); color:#7dd3fc;}
+    .darkmode .footer {color:#6b7280;}
+    @media (max-width:600px){
+      .main-title{font-size:1.24rem;}
+      .subtitle{font-size:.97rem;}
+      .container{padding:0 8px;}
+      .toggle-btn{ right:7px; top:7px; width:40px; height:40px; font-size:1.12rem;}
+      .game-card{padding: 18px 7px 13px 7px;}
+      .game-icon{width:40px; height:40px; font-size:1.1rem;}
+    }
+  </style>
+</head>
+<body>
+  <div class="aurora-wrap"><div class="aurora"></div></div>
+  <button class="toggle-btn" title="Dark Mode umschalten" onclick="toggleDarkMode()">
+    <span id="darkToggleIcon">🌙</span>
+  </button>
+  <div class="container">
+    <div class="header-zone">
+      <span class="main-title">Spieleübersicht</span><br>
+      <span class="subtitle">© Pascal Asch</span>
+    </div>
+    <div class="games-grid">
+      <a href="wizard_rechner.html" class="game-card" title="Wizard Scoreboard öffnen">
+        <span class="game-icon" aria-label="Wizard">
+          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+            <circle cx="20" cy="20" r="17.5" stroke="#4f8cff" stroke-width="2"/>
+            <path d="M24 15a4 4 0 00-8 0c0 2 2.5 7 4 10 1.5-3 4-8 4-10z" stroke="#4f8cff" stroke-width="2" fill="#e0e7ff"/>
+            <circle cx="20" cy="15" r="2" fill="#60a5fa"/>
+          </svg>
+        </span>
+        <span class="game-title">Wizard</span>
+        <span class="game-desc">Legendäres Stichspiel. Digitales Scoreboard mit Animations- und Auswertungsfunktionen.</span>
+      </a>
+      <a href="rummikub_rechner.html" class="game-card" title="Rummikub Punkte-Tracker öffnen">
+        <span class="game-icon" aria-label="Rummikub">
+          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+            <rect x="8" y="8" width="24" height="24" rx="5" fill="#e0e7ff" stroke="#4f8cff" stroke-width="2"/>
+            <text x="20" y="27" text-anchor="middle" font-size="15" fill="#60a5fa" font-weight="bold">13</text>
+          </svg>
+        </span>
+        <span class="game-title">Rummikub</span>
+        <span class="game-desc">Zahlen, Reihen, Strategie! Punkte digital erfassen und auswerten.</span>
+      </a>
+      <a href="phase10.html" class="game-card" title="Phase 10 Tracker öffnen">
+        <span class="game-icon" aria-label="Phase 10">
+          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+            <rect x="9" y="9" width="22" height="22" rx="6" fill="#f0f9ff" stroke="#4f8cff" stroke-width="2"/>
+            <text x="20" y="27" text-anchor="middle" font-size="16" fill="#60a5fa" font-weight="bold">10</text>
+          </svg>
+        </span>
+        <span class="game-title">Phase 10</span>
+        <span class="game-desc">Alle Phasen & Punkte digital tracken. Spielverlauf im Apple-Style.</span>
+      </a>
+      <div class="game-card" tabindex="0" title="UNO – Bald verfügbar">
+        <span class="game-icon" aria-label="UNO">
+          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+            <ellipse cx="20" cy="20" rx="15" ry="12" fill="#fff" stroke="#4f8cff" stroke-width="2"/>
+            <text x="20" y="24" text-anchor="middle" font-size="16" fill="#4f8cff" font-weight="bold">UNO</text>
+          </svg>
+        </span>
+        <span class="game-title">UNO (Platzhalter)</span>
+        <span class="game-desc">Bald digital als modernes Scoreboard. Vorschläge willkommen!</span>
+      </div>
+      <div class="game-card" tabindex="0" title="Kniffel – Bald verfügbar">
+        <span class="game-icon" aria-label="Würfel">
+          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+            <rect x="10" y="10" width="20" height="20" rx="6" fill="#e0e7ff" stroke="#4f8cff" stroke-width="2"/>
+            <circle cx="20" cy="20" r="2.5" fill="#60a5fa"/>
+            <circle cx="14" cy="14" r="2" fill="#4f8cff"/>
+            <circle cx="26" cy="26" r="2" fill="#4f8cff"/>
+          </svg>
+        </span>
+        <span class="game-title">Kniffel (Platzhalter)</span>
+        <span class="game-desc">Kniffel, Qwixx oder dein Lieblingswürfelspiel – Scoreboard folgt.</span>
+      </div>
+      <div class="game-card" tabindex="0" title="Eigene Idee?">
+        <span class="game-icon" aria-label="Add">
+          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+            <circle cx="20" cy="20" r="15" fill="#f0faff" stroke="#4f8cff" stroke-width="2"/>
+            <path d="M20 14v12M14 20h12" stroke="#4f8cff" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="game-title">Dein Spiel?</span>
+        <span class="game-desc">Eigenes Spiel oder Wunsch? Sag Bescheid, ich baue es digital für dich.</span>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    &copy; <span id="year"></span> Pascal Asch · <span style="color:#4f8cff">Deine digitalen Spiel-Scoreboards</span>
+  </div>
+  <script>
+    // Darkmode Handling
+    function toggleDarkMode() {
+      document.body.classList.toggle('darkmode');
+      document.getElementById('darkToggleIcon').textContent =
+        document.body.classList.contains('darkmode') ? "☀️" : "🌙";
+    }
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

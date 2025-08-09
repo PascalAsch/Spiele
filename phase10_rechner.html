@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Phase 10 Scoreboard – Touch Pro · © Pascal Asch</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-grad: radial-gradient(1200px 800px at 60% 10%, #a5b4fc 0%, #6366f1 60%, #0f172a 100%);
+      --glass-bg: rgba(255,255,255,.9);
+      --text:#0b1020; --muted:#334155; --accent:#6366f1; --accent2:#38bdf8;
+      --row1:#e0f2fe; --row2:#eef2ff; --head1:#e0e7ff; --head2:#f1f5fd;
+      --input-bg:#ffffff; --input-border:#c7d2fe; --input-text:#0b1020;
+      --sidebar-w: 300px; --sidebar-w-collapsed: 72px;
+      --seg-bg:#eef2ff; --seg-on:#fff; --seg-border:#c7d2fe;
+    }
+    [data-theme="dark"]{
+      --bg-grad: radial-gradient(1200px 800px at 60% 10%, #0b122b 0%, #0a0f22 60%, #000 100%);
+      --glass-bg: rgba(17,24,39,.78);
+      --text:#e5e7eb; --muted:#94a3b8; --accent:#8b5cf6; --accent2:#22d3ee;
+      --row1:#0b122b; --row2:#0e172d; --head1:#111827; --head2:#0b122b;
+      --input-bg:#111827; --input-border:#334155; --input-text:#e5e7eb;
+      --seg-bg:#0e172d; --seg-on:#111827; --seg-border:#334155;
+    }
+    html,body{height:100%}
+    body{margin:0;font-family:'Inter',system-ui,Arial,sans-serif;background:var(--bg-grad);color:var(--text);overflow-x:hidden}
+
+    .plx{position:fixed;inset:-10vh -10vw;pointer-events:none;z-index:-1;filter:blur(30px);opacity:.45;transform:translate3d(0,0,0) scale(1.05);transition:opacity .6s ease}
+    .plx.l1{background:radial-gradient(900px 600px at 10% 20%, #a5b4fc55, transparent 70%)}
+    .plx.l2{background:radial-gradient(900px 600px at 80% 10%, #38bdf855, transparent 72%)}
+    .plx.l3{background:radial-gradient(900px 600px at 50% 90%, #8b5cf655, transparent 72%)}
+    [data-theme="dark"] .plx{opacity:.28}
+
+    .glass{background:var(--glass-bg);backdrop-filter:blur(14px) saturate(1.05);border-radius:18px;box-shadow:0 10px 40px #0000003a}
+    .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;padding:.85rem 1rem;font-weight:800}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
+    .btn-muted{background:#e5e7eb}
+    [data-theme="dark"] .btn-muted{background:#1f2937;color:#e5e7eb}
+    .btn-danger{background:#ef4444;color:#fff}
+    .table-head-1{background:var(--head1);color:var(--text);font-weight:900}
+    .table-head-2{background:var(--head2);color:var(--muted)}
+    .row-tip{background:var(--row1)}
+    .row-res{background:var(--row2)}
+    .input{background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text)}
+
+    .chip{border:1px solid var(--seg-border);background:var(--seg-bg);padding:.5rem .7rem;border-radius:999px;font-weight:800;color:var(--muted);user-select:none}
+    .chip.active{background:var(--seg-on);color:var(--text);}
+
+    .sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);padding:14px;display:flex;flex-direction:column;gap:12px;transition:width .25s ease}
+    .sidebar.collapsed{width:var(--sidebar-w-collapsed)}
+    .content{margin-left:calc(var(--sidebar-w) + 16px);min-height:100vh;padding:14px;transition:margin-left .25s ease}
+    .content.shifted{margin-left:calc(var(--sidebar-w-collapsed) + 16px)}
+    .icon-label{margin-left:.5rem}
+    .sidebar.collapsed .icon-label{display:none}
+    @media (max-width: 900px){
+      .sidebar{transform:translateX(-110%);box-shadow:none}
+      .sidebar.open{transform:translateX(0);z-index:50}
+      .content{margin-left:0}
+      .content.shifted{margin-left:0}
+      #mobileShade{display:none}
+      .sidebar.open + #mobileShade{display:block;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40}
+    }
+    #view-game .grid-2cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 1024px){ #view-game .grid-2cols{grid-template-columns:1fr} }
+    .leftPanel{display:grid;grid-template-rows:auto 1fr auto;gap:12px;height:calc(100vh - 28px)}
+    .rightPanel{height:calc(100vh - 28px);overflow:auto}
+    #keypadWrap{position:sticky;bottom:env(safe-area-inset-bottom);z-index:10}
+    .h-180{height:180px}
+    .h-240{height:240px}
+    #endView{z-index:99990}
+    #saveDetail{z-index:99995}
+
+    .seg{display:flex;flex-wrap:wrap;background:var(--seg-bg);border:1px solid var(--seg-border);border-radius:14px;padding:6px;gap:6px;min-width:0}
+    .seg button{flex:1 1 140px;border-radius:10px;padding:.6rem .8rem;font-weight:700;color:var(--muted);background:transparent;border:1px solid transparent;white-space:nowrap}
+    .seg button.active{background:var(--seg-on);color:var(--text);border:1px solid var(--seg-border)}
+
+    .setup-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+    @media (max-width: 768px){ .setup-opts{grid-template-columns:1fr} }
+    .minw0{min-width:0}
+
+    /* Big buttons for „Ohne Punkte“ */
+    .biggrid{display:grid;grid-template-columns:1fr;gap:10px}
+    .bigbtn{display:flex;align-items:center;justify-content:center;border-radius:16px;padding:1.25rem 1rem;font-size:1.5rem;font-weight:900}
+    .bigbtn.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
+    .bigbtn.secondary{background:var(--seg-bg);border:1px solid var(--seg-border);color:var(--text)}
+    .bigbtn.warn{background:#f59e0b;color:#111827}
+
+    /* Center toast */
+    #toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99999;display:none}
+    #toast .bubble{padding:1rem 1.2rem;border-radius:14px;font-weight:800;box-shadow:0 10px 30px #00000033}
+
+    #endView .panel{display:flex;flex-direction:column}
+    #endScroll{overflow:auto;max-height:50vh}
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="plx l1"></div><div class="plx l2"></div><div class="plx l3"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar glass">
+    <div class="flex items-center justify-between gap-2">
+      <button id="btnCollapse" class="btn btn-muted" title="Sidebar ein-/ausklappen">☰</button>
+    </div>
+    <div class="grid gap-2 mt-1">
+      <button class="btn btn-muted" data-nav="setup">🏠 <span class="icon-label">Start / Setup</span></button>
+      <button class="btn btn-muted" data-nav="game">📋 <span class="icon-label">Scoreboard</span></button>
+      <button class="btn btn-muted" data-nav="analytics">📈 <span class="icon-label">Analytics</span></button>
+      <button class="btn btn-muted" data-nav="history">🗂️ <span class="icon-label">Spielstände</span></button>
+      <button class="btn btn-muted" data-nav="rules">📜 <span class="icon-label">Regeln</span></button>
+      <button class="btn btn-muted" data-nav="settings">⚙️ <span class="icon-label">Settings</span></button>
+      <button id="btnHome" class="btn btn-primary">🏠 <span class="icon-label">Zur Startseite</span></button>
+    </div>
+    <div class="text-xs opacity-80 mt-auto">© <span id="year"></span> Pascal Asch</div>
+  </aside>
+  <div id="mobileShade"></div>
+
+  <!-- CONTENT -->
+  <main id="content" class="content">
+    <!-- SETUP -->
+    <section id="view-setup" class="grid xl:grid-cols-2 gap-3">
+      <div class="glass p-4 grid gap-4">
+        <h1 class="text-2xl font-black" style="color:var(--accent)">Start / Setup</h1>
+
+        <div class="grid gap-2">
+          <label class="font-semibold">Spieler</label>
+          <div id="playerInputs" class="space-y-2">
+            <input class="input w-full px-4 py-4 rounded-xl" type="text" placeholder="Spieler 1" oninput="UI.addNext(this)">
+          </div>
+          <div class="text-sm" style="color:var(--muted)">Reihenfolge = Sitzreihenfolge.</div>
+        </div>
+
+        <div class="setup-opts">
+          <div class="grid gap-2 minw0">
+            <label class="font-semibold">Phasen-Satz</label>
+            <div id="segPhaseSet" class="seg">
+              <button data-val="classic" class="active">Classic</button>
+              <button data-val="master">Master</button>
+              <button data-val="custom">Benutzerdefiniert</button>
+            </div>
+            <div id="customPhases" class="hidden grid grid-cols-1 gap-2 mt-1 text-sm">
+              <div class="opacity-80">Definiere die 10 Phasen (eine pro Zeile):</div>
+              <div id="customPhaseInputs" class="grid grid-cols-1 gap-1"></div>
+            </div>
+          </div>
+
+          <div class="grid gap-2 minw0">
+            <label class="font-semibold">Reihenfolge</label>
+            <div id="segOrder" class="seg">
+              <button data-val="fixed" class="active">Feste Reihenfolge</button>
+              <button data-val="free">Freie Wahl</button>
+            </div>
+          </div>
+
+          <div class="grid gap-2 minw0">
+            <label class="font-semibold">Wertungsmodus</label>
+            <div id="segScoreMode" class="seg">
+              <button data-val="points" class="active">Mit Punkten</button>
+              <button data-val="phases">Ohne Punkte</button>
+            </div>
+            <div class="text-sm mt-1" style="color:var(--muted)">
+              „Ohne Punkte“: große Sofort-Buttons (Phase geschafft / nicht geschafft / ausgespielt) – ohne OK.
+              „Mit Punkten“: Ausspieler markieren (bekommt automatisch 0) + Punkte eingeben.
+            </div>
+          </div>
+
+          <div class="col-span-2 text-sm" style="color:var(--muted)">
+            Übliche Kartenwerte (nur Info, tragt hier Summen ein): 1–9 = 5 · 10–12 = 10 · Skip = 15 · Joker = 25.
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <button id="btnStart" class="btn btn-primary text-lg">🚀 Spiel starten</button>
+          <button id="btnLoad" class="btn btn-muted text-lg hidden">📂 Fortsetzen</button>
+          <button id="btnOpenSaves" class="btn btn-muted text-lg" data-nav="history">💾 Spielstände</button>
+        </div>
+        <div id="setupError" class="text-red-500 font-semibold text-center"></div>
+      </div>
+
+      <!-- rechte Home-Spalte -->
+      <div class="grid gap-3">
+        <div class="glass p-4">
+          <h2 class="font-extrabold mb-3" style="color:var(--accent)">Regeln (Kurz & klar)</h2>
+          <div class="grid sm:grid-cols-2 gap-2 text-sm">
+            <div class="glass p-3"><div class="font-bold mb-1">Ziel</div><div>Erfülle 10 Phasen. Bei Gleichstand zählt die niedrigste Punktzahl.</div></div>
+            <div class="glass p-3"><div class="font-bold mb-1">Rundenende</div><div>Wenn jemand „ausgespielt“ ist. Im Modus „Ohne Punkte“ ist das optional.</div></div>
+            <div class="glass p-3"><div class="font-bold mb-1">Varianten</div><div>Feste Reihenfolge oder freie Phase-Wahl. Eigene Phasen möglich.</div></div>
+            <div class="glass p-3"><div class="font-bold mb-1">Hinweis</div><div>„Mit Punkten“: Ausspieler markieren; dieser erhält automatisch 0 Punkte.</div></div>
+          </div>
+        </div>
+
+        <div class="glass p-4">
+          <h2 class="font-extrabold mb-2" style="color:var(--accent)">Letzte Spielstände</h2>
+          <div id="savesListHome" class="grid gap-2 text-sm"></div>
+          <div class="mt-2 flex justify-center"><button class="btn btn-muted" data-nav="history">Alle Spielstände →</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="view-game" class="hidden">
+      <div class="grid-2cols">
+        <!-- LEFT -->
+        <div class="leftPanel">
+          <div class="glass p-4 grid md:grid-cols-3 gap-2">
+            <div><div class="text-sm" style="color:var(--muted)">Runde</div><div id="roundProgress" class="text-2xl font-extrabold -mt-1">1/—</div></div>
+            <div id="orderLine" class="text-sm md:text-base">📜 Reihenfolge: –</div>
+            <div id="phaseHintLine" class="text-sm md:text-base">🎯 Nächste Phase: –</div>
+          </div>
+
+          <div class="glass p-4 grid gap-2">
+            <div id="phaseTitle" class="text-xl font-extrabold" style="color:var(--accent)">Eingabe</div>
+            <div id="whoPrompt" class="text-2xl font-bold">Eingaben für …?</div>
+
+            <!-- Chips (nur im Punkte-Modus) -->
+            <div id="chipRow" class="flex gap-2 flex-wrap">
+              <button id="btnPhaseDone" class="chip">✓ Phase geschafft</button>
+              <button id="btnOut" class="chip">🏁 Ausgespielt</button>
+            </div>
+
+            <!-- Big buttons (nur im Ohne-Punkte-Modus) -->
+            <div id="buttonsPhases" class="biggrid hidden">
+              <button class="bigbtn primary" onclick="Game.quick('out')">🏁 Ausgespielt (Phase ✓)</button>
+              <button class="bigbtn secondary" onclick="Game.quick('done')">✓ Phase geschafft</button>
+              <button class="bigbtn warn" onclick="Game.quick('fail')">✗ Phase NICHT geschafft</button>
+            </div>
+
+            <!-- Zahleneingabe (nur im Punkte-Modus) -->
+            <div id="numberWrap" class="grid gap-1">
+              <div id="numberDisplay" class="text-6xl font-black select-none" style="color:var(--accent)">0</div>
+              <div class="text-sm" style="color:var(--muted)">Ausspieler markieren – der bekommt automatisch <b>0</b>.</div>
+              <div id="inputError" class="text-red-500 font-semibold min-h-[1.2em]"></div>
+            </div>
+          </div>
+
+          <div id="keypadWrap" class="glass p-3">
+            <div class="grid grid-cols-3 gap-2 select-none">
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('1')">1</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('2')">2</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('3')">3</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('4')">4</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('5')">5</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('6')">6</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('7')">7</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('8')">8</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('9')">9</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.cl()">⌫</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('0')">0</button>
+              <button class="py-5 rounded-xl text-white text-2xl font-black" style="background:linear-gradient(90deg,var(--accent),var(--accent2))" onclick="Game.ok()">OK</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="rightPanel">
+          <div class="glass p-3">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-bold" style="color:var(--accent)">🧮 Rundenverlauf</h2>
+              <div class="hidden md:flex gap-2">
+                <button id="btnRedoRound" class="btn btn-muted">🔁 Runde neu</button>
+                <button id="btnEnd" class="btn btn-primary">🏁 Beenden</button>
+                <button id="btnReset" class="btn btn-danger">🔄 Reset</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm text-center" id="roundTable">
+                <thead>
+                  <tr class="table-head-1" id="hdr1"></tr>
+                  <tr class="table-head-2" id="hdr2"></tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="view-analytics" class="hidden grid gap-3">
+      <div class="glass p-3 flex gap-2 justify-between items-center">
+        <div class="font-extrabold" style="color:var(--accent)">Analytics</div>
+        <div class="flex gap-2">
+          <button id="btnAnaCurrent" class="btn btn-muted">Aktuelles Spiel</button>
+          <button id="btnAnaGlobal" class="btn btn-primary">Alle Spielstände</button>
+        </div>
+      </div>
+
+      <div id="ana-current" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="glass p-4" data-chartbox="chartPoints"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Punkteverlauf (kumuliert)</h3><div class="h-240"><canvas id="chartPoints"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="chartPhases"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Phasenstand</h3><div class="h-240"><canvas id="chartPhases"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="chartOuts"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Rundensiege (Ausgespielt)</h3><div class="h-240"><canvas id="chartOuts"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="chartExtremes"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Extrema: Höchste Handpunkte</h3><div class="h-240"><canvas id="chartExtremes"></canvas></div></div>
+      </div>
+
+      <div id="ana-global" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="glass p-4" data-chartbox="gaWins"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Spiel-Siege (alle Spiele)</h3><div class="h-240"><canvas id="gaWins"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="gaAvgScore"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø Endpunkte (low = gut)</h3><div class="h-240"><canvas id="gaAvgScore"></canvas></div></div>
+        <div class="glass p-4 lg:col-span-2" data-chartbox="gaBestScore"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Beste (niedrigste) Punkte</h3><div class="h-240"><canvas id="gaBestScore"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="gaPhases"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø erfüllte Phasen</h3><div class="h-240"><canvas id="gaPhases"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="gaOuts"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Rundensiege (Ausgespielt)</h3><div class="h-240"><canvas id="gaOuts"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="hidden grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div class="glass p-4 md:col-span-2 xl:col-span-3 flex items-center justify-between">
+        <h3 class="text-xl font-extrabold" style="color:var(--accent)">Spielstände & Hall of Fame</h3>
+        <div class="flex gap-2">
+          <button class="btn btn-muted" onclick="Saves.exportJSON()">⬇️ Export JSON</button>
+          <button class="btn btn-muted" onclick="Saves.importJSON()">⬆️ Import JSON</button>
+        </div>
+      </div>
+      <div id="savesList" class="grid md:grid-cols-2 xl:grid-cols-3 gap-3 md:col-span-2 xl:col-span-3"></div>
+    </section>
+
+    <!-- RULES -->
+    <section id="view-rules" class="hidden grid gap-3">
+      <div class="glass p-5">
+        <h3 class="text-xl font-extrabold mb-4" style="color:var(--accent)">Regeln (Phase 10 – kompakt)</h3>
+        <div class="grid lg:grid-cols-2 gap-3 text-sm">
+          <div class="glass p-4"><div class="font-bold mb-1">1) Ziel</div><div>Erfülle 10 Phasen. Bei Gleichstand gewinnt die niedrigste Punktzahl (nur im Punkte-Modus relevant).</div></div>
+          <div class="glass p-4"><div class="font-bold mb-1">2) Rundenende</div><div>Wenn jemand alle Karten ablegt (Ausspieler). Im Modus „Ohne Punkte“ optional.</div></div>
+          <div class="glass p-4"><div class="font-bold mb-1">3) Punkte (optional)</div><div>1–9 = 5 · 10–12 = 10 · Skip = 15 · Joker = 25. Ausspieler = 0.</div></div>
+          <div class="glass p-4"><div class="font-bold mb-1">4) Phasen</div><div>Classic/Master oder 10 eigene Phasen.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="hidden grid gap-3">
+      <div class="glass p-4 flex items-center justify-between">
+        <div>
+          <div class="font-semibold">Dark Mode</div>
+          <div class="text-sm" style="color:var(--muted)">Schaltet die edle Nachtansicht um.</div>
+        </div>
+        <label class="inline-flex items-center cursor-pointer">
+          <input id="toggleDark" type="checkbox" class="sr-only peer">
+          <div class="w-14 h-8 bg-gray-300 rounded-full peer-checked:bg-indigo-500 relative">
+            <div class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-all peer-checked:left-7"></div>
+          </div>
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <!-- END OVERLAY -->
+  <div id="endView" class="hidden fixed inset-0 bg-black/30 p-3 md:p-8">
+    <div id="endContainer" class="mx-auto max-w-6xl grid md:grid-cols-2 gap-4 md:gap-6 h-full">
+      <section class="glass p-4 md:p-6 panel">
+        <h3 class="text-3xl font-extrabold mb-2" style="color:var(--accent)">Endergebnis</h3>
+        <div id="finalResult" class="mb-3"></div>
+        <div id="extraStats" class="mb-4"></div>
+        <div id="endScroll" class="grid grid-cols-1 gap-3">
+          <div class="glass p-3"><div class="font-bold mb-1">Punkteverlauf</div><div class="h-180"><canvas id="endC1"></canvas></div></div>
+          <div class="glass p-3"><div class="font-bold mb-1">Endpunkte</div><div class="h-180"><canvas id="endC2"></canvas></div></div>
+          <div class="glass p-3"><div class="font-bold mb-1">Phasenstand</div><div class="h-180"><canvas id="endC3"></canvas></div></div>
+          <div class="glass p-3"><div class="font-bold mb-1">Rundensiege</div><div class="h-180"><canvas id="endC4"></canvas></div></div>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <button class="btn btn-primary" onclick="UI.csv()">⬇️ CSV</button>
+          <button class="btn btn-danger" onclick="UI.restart()">Neues Spiel</button>
+        </div>
+      </section>
+      <section class="glass p-4 md:p-6 panel">
+        <h3 class="text-2xl font-bold mb-2" style="color:var(--accent)">Abschließender Verlauf</h3>
+        <div class="overflow-x-auto grow">
+          <table class="min-w-full text-sm text-center" id="finalTable">
+            <thead class="table-head-1">
+              <tr id="finalHdr"></tr>
+            </thead>
+            <tbody id="finalBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- SAVE DETAIL OVERLAY -->
+  <div id="saveDetail" class="hidden fixed inset-0 bg-black/40 p-3 md:p-6">
+    <div class="glass mx-auto max-w-7xl w-full h-[calc(100vh-24px)] md:h-[calc(100vh-48px)] p-4 md:p-6 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <div id="sdTitle" class="text-xl font-extrabold" style="color:var(--accent)">Spiel-Details</div>
+          <div id="sdMeta" class="text-sm" style="color:var(--muted)"></div>
+        </div>
+        <div class="flex gap-2"><button id="btnSdClose" class="btn btn-muted">✖️ Schließen</button></div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 overflow-hidden">
+        <div class="glass p-3"><div class="font-bold mb-1">Punkteverlauf</div><div class="h-240"><canvas id="sdPoints"></canvas></div></div>
+        <div class="glass p-3"><div class="font-bold mb-1">Endpunkte</div><div class="h-240"><canvas id="sdScores"></canvas></div></div>
+        <div class="glass p-3"><div class="font-bold mb-1">Phasenstand</div><div class="h-240"><canvas id="sdPhases"></canvas></div></div>
+        <div class="glass p-3"><div class="font-bold mb-1">Rundensiege</div><div class="h-240"><canvas id="sdOuts"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center Toast -->
+  <div id="toast"><div class="glass bubble"></div></div>
+
+  <script>
+    const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+    const saveKey = 'phase10.touch.v2'; // neue Version
+    const settingsKey='phase10.touch.v1.settings';
+    const GLOBAL_SAVES_KEY = 'pascal.spiele.saves.v1';
+    const GAME_ID = 'phase10';
+    const SAVE_SCHEMA = 2;
+
+    const PHASE_SETS = {
+      classic: ['2 Drillinge','Drilling + 4er-Folge','Vierling + 4er-Folge','7er-Folge','8er-Folge','9er-Folge','2 Vierlinge','7 einer Farbe','5er-Satz + Zwilling','5er-Satz + Drilling'],
+      master:  ['4 Zwillinge','6 einer Farbe','Vierling + 4er-Folge','8er-Folge','7 einer Farbe','9er-Folge','2 Vierlinge','4er-Folge Farbe + Drilling','5er-Satz + Drilling','5er-Satz + 3er-Folge Farbe']
+    };
+
+    const S = {
+      players:[],
+      orderMode:'fixed',     // 'fixed' | 'free'
+      phaseSet:'classic',    // 'classic' | 'master' | 'custom'
+      customPhases:[],
+      scoreMode:'points',    // 'points' | 'phases'
+      round:1, stepIndex:0,
+      handPoints:[],         // [{player: points}]
+      phaseDone:[],          // [{player: bool}]
+      outs:[],               // [playerName|null]
+      selOut:null,           // temporäre Ausspieler-Wahl pro laufender Runde
+      totals:{},
+      history:[],
+      savedFinal:false
+    };
+    const Settings = { theme:'light', sidebar:'expanded' };
+
+    const safeLS = {
+      get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+      set(k,v){ try { localStorage.setItem(k,v); } catch {} },
+      remove(k){ try { localStorage.removeItem(k); } catch {} }
+    };
+
+    const Storage = {
+      save(){ safeLS.set(saveKey, JSON.stringify(S)); },
+      load(){ const d=safeLS.get(saveKey); if(!d) return false; try{ Object.assign(S, JSON.parse(d)); return true; }catch{ return false; } },
+      clear(){ safeLS.remove(saveKey); },
+      saveSettings(){ safeLS.set(settingsKey, JSON.stringify(Settings)); },
+      loadSettings(){ const d=safeLS.get(settingsKey); if(d){ try{ Object.assign(Settings, JSON.parse(d)); }catch{} } }
+    };
+
+    /* ---------- Saves (nur Phase 10) ---------- */
+    function looksLikePhase10Save(e){
+      return !!e && (e.gameId===GAME_ID ||
+        (Array.isArray(e.players) && Array.isArray(e.phaseDone) && e.totals));
+    }
+    function normalizeSave(e){
+      if(!e) return null;
+      if(e.gameId && e.gameId!==GAME_ID) return null;
+      if(!looksLikePhase10Save(e)) return null;
+      return { ...e, gameId:GAME_ID, schema:(e.schema??SAVE_SCHEMA) };
+    }
+    const Saves = {
+      all(){
+        const raw = safeLS.get(GLOBAL_SAVES_KEY);
+        const arr = raw? JSON.parse(raw):[];
+        return arr.map(normalizeSave).filter(Boolean);
+      },
+      writePhase10List(list){
+        const raw = safeLS.get(GLOBAL_SAVES_KEY);
+        const all = raw? JSON.parse(raw):[];
+        const others = all.filter(x=>!looksLikePhase10Save(x));
+        safeLS.set(GLOBAL_SAVES_KEY, JSON.stringify([...list, ...others]));
+      },
+      add(e){
+        const entry=normalizeSave({ ...e, gameId:GAME_ID, schema:SAVE_SCHEMA });
+        const a=this.all(); a.unshift(entry); this.writePhase10List(a);
+        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+      },
+      remove(id){
+        const a=this.all().filter(x=>x.id!==id); this.writePhase10List(a);
+        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+      },
+      exportJSON(){
+        const blob=new Blob([JSON.stringify(this.all(),null,2)],{type:'application/json'});
+        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='phase10_saves.json'; a.click(); URL.revokeObjectURL(url);
+      },
+      importJSON(){
+        const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json';
+        inp.onchange=()=>{ const f=inp.files[0]; if(!f) return; const r=new FileReader();
+          r.onload=()=>{ try{
+            const incoming=JSON.parse(r.result);
+            const valid=(Array.isArray(incoming)?incoming:[]).map(normalizeSave).filter(Boolean);
+            const merged=[...valid, ...this.all()];
+            const seen=new Set();
+            const dedup=merged.filter(x=>{ const k=x.id||x.ts||JSON.stringify(x.players||[]); if(seen.has(k)) return false; seen.add(k); return true; });
+            this.writePhase10List(dedup);
+            UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+            alert(`Import: ${valid.length} Phase-10-Spielstände übernommen.`);
+          }catch{ alert('Ungültige Datei.'); } };
+          r.readAsText(f);
+        };
+        inp.click();
+      },
+      saveFinished(silent=false){
+        const entry={
+          id:'g_'+Date.now(), ts:new Date().toISOString(),
+          gameId:GAME_ID, schema:SAVE_SCHEMA,
+          players:[...S.players], orderMode:S.orderMode, phaseSet:S.phaseSet, customPhases:[...S.customPhases],
+          scoreMode:S.scoreMode,
+          rounds:S.handPoints.length,
+          totals:{...S.totals}, outs:[...S.outs],
+          handPoints:S.handPoints, phaseDone:S.phaseDone
+        };
+        const a=this.all(); a.unshift(entry); this.writePhase10List(a);
+        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+        if(!silent) alert('Spielstand gespeichert.');
+      }
+    };
+
+    /* ---------- Helpers ---------- */
+    function phaseList(){
+      if(S.phaseSet==='custom' && S.customPhases.length===10) return S.customPhases;
+      if(S.phaseSet==='master') return PHASE_SETS.master;
+      return PHASE_SETS.classic;
+    }
+    function playerPhaseCount(){
+      const m=Object.fromEntries(S.players.map(p=>[p,0]));
+      S.phaseDone.forEach(R=>{ S.players.forEach(p=>{ if(R?.[p]) m[p]++; }); });
+      return m;
+    }
+    function recalcTotals(){
+      S.players.forEach(p=>S.totals[p]=0);
+      S.handPoints.forEach(P=>{ S.players.forEach(pl=>{ if(P && typeof P[pl]==='number') S.totals[pl]+=P[pl]; }); });
+    }
+
+    /* ---------- Analytics ---------- */
+    const Analytics = {
+      perRoundTotals(){
+        const totals=S.players.map(()=>[]), acc=S.players.map(()=>0);
+        for(let i=0;i<S.handPoints.length;i++){
+          const P=S.handPoints[i]||{};
+          const full = Object.keys(P).length===S.players.length || S.scoreMode==='phases';
+          S.players.forEach((pl,pi)=>{ if(full){ acc[pi]+= (P[pl]??0); } totals[pi].push(acc[pi]); });
+        }
+        return totals;
+      },
+      outsCount(){ const m=Object.fromEntries(S.players.map(p=>[p,0])); S.outs.forEach(o=>{ if(o) m[o]++; }); return m; },
+      extremes(){
+        const maxHand=Object.fromEntries(S.players.map(p=>[p,0]));
+        S.handPoints.forEach(P=>{ S.players.forEach(pl=>{ const v=P?.[pl]; if(v!=null && v>maxHand[pl]) maxHand[pl]=v; }); });
+        return {maxHand};
+      }
+    };
+
+    /* ---------- UI ---------- */
+    let chartPoints, chartPhases, chartOuts, chartExtremes;
+    let gaWins, gaAvg, gaBestLow, gaPhases, gaOuts, gaMaxHand;
+    let sdC1, sdC2, sdC3, sdC4;
+    let endCharts=[];
+
+    let tmpPhaseDone=false; // nur Punkte-Modus
+    let buf='';             // nur Punkte-Modus
+
+    function showView(v){
+      ['setup','game','analytics','history','rules','settings'].forEach(x=>$('#view-'+x)?.classList.toggle('hidden', v!==x));
+      if(v==='analytics'){ UI.updateCharts(); UI.updateGlobalCharts(); }
+      if(v==='history'){ UI.renderSaves(); }
+      if(v==='setup'){ UI.renderSavesHome(); }
+    }
+
+    const UI = {
+      init(){
+        $('#year').textContent=new Date().getFullYear();
+
+        $$('[data-nav]').forEach(btn=> btn.addEventListener('click', ()=>{
+          showView(btn.dataset.nav);
+          if(window.innerWidth<=900){ $('#sidebar').classList.remove('open'); }
+        }));
+
+        $('#btnCollapse').onclick=()=>{
+          const sb=$('#sidebar'), ct=$('#content');
+          if(window.innerWidth<=900){ sb.classList.toggle('open'); return; }
+          sb.classList.toggle('collapsed'); ct.classList.toggle('shifted');
+          Settings.sidebar= sb.classList.contains('collapsed')?'collapsed':'expanded';
+          Storage.saveSettings();
+        };
+
+        // Settings
+        Storage.loadSettings();
+        document.documentElement.setAttribute('data-theme', Settings.theme||'light');
+        if(Settings.sidebar==='collapsed'){ $('#sidebar').classList.add('collapsed'); $('#content').classList.add('shifted'); }
+        const t=$('#toggleDark'); if(t) t.checked=(Settings.theme==='dark');
+        $('#toggleDark')?.addEventListener('change',e=>{ Settings.theme=e.target.checked?'dark':'light'; document.documentElement.setAttribute('data-theme',Settings.theme); Storage.saveSettings(); });
+
+        // Actions
+        $('#btnStart').onclick=Handlers.start;
+        $('#btnLoad').onclick=Handlers.load;
+        $('#btnReset').onclick=Handlers.reset;
+        $('#btnEnd').onclick=Handlers.end;
+        $('#btnRedoRound').onclick=Handlers.redoRound;
+        $('#btnOpenSaves').onclick=()=>{ showView('history'); };
+        $('#btnHome').onclick=()=>{ location.href='https://pascalasch.github.io/Spiele/Overview.html'; };
+        $('#btnSdClose').onclick=()=> UI.closeSaveDetail();
+        $('#saveDetail').addEventListener('click',(e)=>{ if(e.target.id==='saveDetail') UI.closeSaveDetail(); });
+
+        // Setup segmented
+        $('#segPhaseSet').addEventListener('click', e=>{
+          if(e.target.tagName!=='BUTTON') return;
+          $$('#segPhaseSet button').forEach(b=>b.classList.remove('active'));
+          e.target.classList.add('active'); S.phaseSet=e.target.dataset.val;
+          $('#customPhases').classList.toggle('hidden', S.phaseSet!=='custom');
+          Storage.save();
+        });
+        $('#segOrder').addEventListener('click', e=>{
+          if(e.target.tagName!=='BUTTON') return;
+          $$('#segOrder button').forEach(b=>b.classList.remove('active'));
+          e.target.classList.add('active'); S.orderMode=e.target.dataset.val; Storage.save(); UI.top();
+        });
+        $('#segScoreMode').addEventListener('click', e=>{
+          if(e.target.tagName!=='BUTTON') return;
+          $$('#segScoreMode button').forEach(b=>b.classList.remove('active'));
+          e.target.classList.add('active'); S.scoreMode=e.target.dataset.val; Storage.save(); UI.applyMode(); UI.top();
+        });
+
+        // Chips (Punkte-Modus)
+        $('#btnPhaseDone').onclick=()=>{ tmpPhaseDone=!tmpPhaseDone; $('#btnPhaseDone').classList.toggle('active', tmpPhaseDone); };
+        $('#btnOut').onclick=()=>{ // selektiert Ausspieler für diese Runde
+          const cur=S.players[S.stepIndex%S.players.length];
+          S.selOut = (S.selOut===cur) ? null : cur;
+          $('#btnOut').classList.toggle('active', S.selOut===cur);
+          if(S.selOut===cur){ buf='0'; $('#numberDisplay').textContent='0'; }
+        };
+
+        // Custom phases inputs
+        const cpi=$('#customPhaseInputs');
+        for(let i=1;i<=10;i++){
+          const inp=document.createElement('input');
+          inp.className='input w-full px-3 py-2 rounded';
+          inp.placeholder=`Phase ${i}`;
+          inp.oninput=()=>{ S.customPhases[i-1]=inp.value.trim(); Storage.save(); };
+          cpi.appendChild(inp);
+        }
+
+        if(safeLS.get(saveKey)) $('#btnLoad').classList.remove('hidden');
+
+        // Parallax
+        const layers=$$('.plx');
+        function moveParallax(x,y){
+          const dx=(x/window.innerWidth-0.5), dy=(y/window.innerHeight-0.5);
+          layers.forEach((el,i)=>{ const f=(i+1)*8; el.style.transform=`translate(${dx*f}px, ${dy*f}px) scale(1.05)`; });
+        }
+        window.addEventListener('mousemove',e=>moveParallax(e.clientX,e.clientY),{passive:true});
+        window.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(t) moveParallax(t.clientX,t.clientY); },{passive:true});
+      },
+
+      addNext(el){
+        const c=$('#playerInputs');
+        if(!el.nextElementSibling && el.value.trim()!==''){
+          const n=document.createElement('input');
+          n.className='input w-full px-4 py-4 rounded-xl';
+          n.type='text'; n.placeholder=`Spieler ${c.children.length+1}`;
+          n.oninput=()=>UI.addNext(n);
+          c.appendChild(n);
+        }
+      },
+
+      toast(msg){
+        const t=$('#toast'); const b=t.querySelector('.bubble');
+        b.textContent=msg; t.style.display='block'; b.style.background='var(--glass-bg)'; b.style.color='var(--text)';
+        setTimeout(()=>{ t.style.display='none'; }, 2400);
+      },
+
+      applyMode(){
+        const isPhases = (S.scoreMode==='phases');
+        $('#chipRow').classList.toggle('hidden', isPhases);
+        $('#numberWrap').classList.toggle('hidden', isPhases);
+        $('#keypadWrap').classList.toggle('hidden', isPhases);
+        $('#buttonsPhases').classList.toggle('hidden', !isPhases);
+      },
+
+      top(){
+        $('#roundProgress').textContent=`${S.round}/—`;
+        $('#orderLine').innerHTML=`📜 Reihenfolge: <b>${S.orderMode==='fixed'?'fest':'frei'}</b>`;
+        const cur=S.players[S.stepIndex%S.players.length]||'–';
+        const phases=phaseList();
+        const pCount=playerPhaseCount();
+        let nextText='–';
+        if(S.orderMode==='fixed'){
+          const idx=pCount[cur]??0;
+          nextText = phases[idx] ? `${idx+1}/10 – ${phases[idx]}` : (idx>=10? 'Fertig (alle 10)' : '–');
+        }else{
+          nextText = `${pCount[cur]||0}/10 erfüllt · frei wählbar`;
+        }
+        $('#phaseHintLine').innerHTML=`🎯 Nächste Phase: <b>${nextText}</b>`;
+        $('#whoPrompt').innerHTML=`Eingaben für <b>${cur}</b>`;
+        $('#inputError').textContent='';
+        // reset Anzeige/Chip-Status (Punkte-Modus)
+        $('#btnOut')?.classList.toggle('active', S.selOut===cur);
+        $('#btnPhaseDone')?.classList.remove('active'); tmpPhaseDone=false; buf=''; $('#numberDisplay').textContent='0';
+      },
+
+      tables(){
+        const hdr1=$('#hdr1'), hdr2=$('#hdr2'), body=$('#tbody');
+        const phaseC=playerPhaseCount();
+        hdr1.innerHTML=`<th>Runde</th>${S.players.map(p=>`<th>${p}</th>`).join('')}<th></th>`;
+        hdr2.innerHTML=`<th>Gesamt</th>${
+          S.players.map(p=>`<th><div>${S.totals[p]||0}</div><div class="text-xs" style="color:var(--muted)">Phase: ${Math.min(phaseC[p]||0,10)}/10</div></th>`).join('')
+        }<th></th>`;
+        body.innerHTML='';
+
+        for(let i=S.handPoints.length-1;i>=0;i--){
+          const P=S.handPoints[i]||{}, R=S.phaseDone[i]||{}, out=S.outs[i];
+          const tr=document.createElement('tr'); tr.className='row-tip';
+          tr.innerHTML=`<td class='font-bold'>Runde ${i+1}</td>`+
+            S.players.map(pl=>{
+              const v = (typeof P[pl]==='number') ? P[pl] : (S.scoreMode==='phases' ? '–' : '');
+              const marks = [
+                (out===pl)?' 🏁':'',
+                (R[pl])? ' ✓':''
+              ].join('');
+              return `<td>${(v!==''? `<b>${v}</b>`:'')}${marks}</td>`;
+            }).join('')+
+            `<td><button class='underline text-red-500' onclick='Handlers.delRound(${i})'>Runde löschen</button></td>`;
+          body.appendChild(tr);
+        }
+      },
+
+      final(){
+        const phases=playerPhaseCount();
+        const finishers=S.players.filter(p=>phases[p]>=10);
+        let headline='';
+        if(S.scoreMode==='points'){
+          if(finishers.length){
+            const minPts=Math.min(...finishers.map(p=>S.totals[p]||0));
+            const winners=finishers.filter(p=>(S.totals[p]||0)===minPts);
+            headline = (winners.length===1)
+              ? `🏅 <b>${winners[0]}</b> gewinnt (Phase 10, ${minPts} Punkte).`
+              : `🏅 ${winners.map(w=>`<b>${w}</b>`).join(' & ')} gewinnen (Phase 10, je ${minPts} Punkte).`;
+          }else{
+            const minPts=Math.min(...S.players.map(p=>S.totals[p]||0));
+            const winners=S.players.filter(p=> (S.totals[p]||0)===minPts);
+            headline = (winners.length===1)
+              ? `🏅 <b>${winners[0]}</b> liegt vorn mit ${minPts} Punkten.`
+              : `🏅 ${winners.map(w=>`<b>${w}</b>`).join(' & ')} liegen vorn (je ${minPts} Punkte).`;
+          }
+        } else {
+          // Ohne Punkte: Sieger = wer zuerst Phase 10 erreicht (ggf. mehrere)
+          headline = finishers.length
+            ? `🏅 ${finishers.map(w=>`<b>${w}</b>`).join(' & ')} erreicht/en Phase 10.`
+            : `🏁 Spielstand – noch niemand auf Phase 10.`;
+        }
+        $('#finalResult').innerHTML=headline;
+
+        const outsCount=Analytics.outsCount();
+        const maxHand=Analytics.extremes().maxHand;
+        const lis=[
+          `1. Phasenstand: ${S.players.map(p=>`${p}: ${Math.min(phases[p]||0,10)}/10`).join(' | ')}`,
+          `2. Rundensiege (Ausgespielt): ${S.players.map(p=>`${p}: ${outsCount[p]||0}`).join(' | ')}`,
+          (S.scoreMode==='points'? `3. Höchste Handpunkte: ${S.players.map(p=>`${p}: ${maxHand[p]||0}`).join(' | ')}` : null)
+        ].filter(Boolean);
+        $('#extraStats').innerHTML=`<ul class='list-disc ml-5'>${lis.map(s=>`<li>${s}</li>`).join('')}</ul>`;
+
+        const h=$('#finalHdr'), b=$('#finalBody'); h.innerHTML=`<th>Runde</th>${S.players.map(p=>`<th>${p}</th>`).join('')}`; b.innerHTML='';
+        for(let i=0;i<S.handPoints.length;i++){
+          const P=S.handPoints[i]||{}, R=S.phaseDone[i]||{}, o=S.outs[i];
+          const tr=document.createElement('tr'); tr.className='row-tip';
+          tr.innerHTML=`<td class='font-bold'>Runde ${i+1}</td>`+
+            S.players.map(pl=>{
+              const pv=(typeof P[pl]==='number')? P[pl] : (S.scoreMode==='phases'?'–':'');
+              const marks=[(o===pl)?' 🏁':'',(R[pl])?' ✓':''].join('');
+              return `<td>${pv}${marks}</td>`;
+            }).join('');
+          b.appendChild(tr);
+        }
+      },
+
+      updateEndCharts(){
+        endCharts.forEach(c=>c&&c.destroy()); endCharts=[];
+        const labels=S.handPoints.map((_,i)=>`R${i+1}`);
+        const totals=Analytics.perRoundTotals();
+        const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
+
+        const phases=playerPhaseCount();
+        const outs=Analytics.outsCount();
+
+        endCharts.push(new Chart($('#endC1'),{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }}));
+        endCharts.push(new Chart($('#endC2'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Punkte', data:S.players.map(p=>S.totals[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
+        endCharts.push(new Chart($('#endC3'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Phasen', data:S.players.map(p=>Math.min(phases[p]||0,10))}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
+        endCharts.push(new Chart($('#endC4'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Rundensiege', data:S.players.map(p=>outs[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
+
+        // Hide points charts if „Ohne Punkte“
+        const showPoints = (S.scoreMode==='points');
+        document.querySelector('[data-chartbox="endC1"]')?.classList?.toggle?.('hidden', !showPoints);
+      },
+
+      csv(){
+        const header = ['Round', ...S.players.flatMap(p=>[`${p} Punkte`,`${p} Phase✓`,`${p} Ausgespielt?`])];
+        const rows=[header.join(',')];
+        for(let i=0;i<S.handPoints.length;i++){
+          const P=S.handPoints[i]||{}, R=S.phaseDone[i]||{}, out=S.outs[i];
+          rows.push([i+1, ...S.players.flatMap(p=>[
+            (typeof P[p]==='number')?P[p]:'',
+            R[p]?1:0,
+            out===p?1:0
+          ])].join(','));
+        }
+        const blob=new Blob([rows.join('\n')],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download='phase10_scores.csv'; a.click(); URL.revokeObjectURL(url);
+      },
+
+      renderSaves(){
+        const box=$('#savesList'); const arr=Saves.all();
+        if(!arr.length){ box.innerHTML='<div class="glass p-4 opacity-70">Keine gespeicherten Spiele.</div>'; return; }
+        box.innerHTML=arr.map(e=>{
+          const date=new Date(e.ts).toLocaleString();
+          const phases=(e.phaseDone||[]).reduce((m,R)=>{ (e.players||[]).forEach(p=>{ if(R?.[p]) m[p]=(m[p]||0)+1; }); return m; },{});
+          const winnerTxt = (e.scoreMode==='points')
+            ? (()=>{ const fin=(e.players||[]).filter(p=> (phases[p]||0)>=10); if(!fin.length) return '—'; const min=Math.min(...fin.map(p=>e.totals?.[p]||0)); return fin.filter(p=>(e.totals?.[p]||0)===min).join(' & '); })()
+            : ((e.players||[]).filter(p=> (phases[p]||0)>=10).join(' & ') || '—');
+          return `<div class='glass p-4 flex flex-col gap-2'>
+            <div class='text-sm' style='color:var(--muted)'>${date} · ${e.players.length} Spieler · Modus: ${e.orderMode} · Satz: ${e.phaseSet} · Wertung: ${e.scoreMode}</div>
+            <div><b>Winner:</b> ${winnerTxt}</div>
+            <div class='text-sm'>${e.players.map(p=>`${p}: ${e.totals?.[p]??0} P · φ ${(phases[p]||0)}/10`).join(' · ')}</div>
+            <div class='flex gap-2 mt-1'>
+              <button class='btn btn-muted' onclick='UI.openSaveDetail("${e.id}")'>🔎 Details</button>
+              <button class='btn btn-danger' onclick='Saves.remove("${e.id}")'>🗑️ Löschen</button>
+            </div>
+          </div>`;
+        }).join('');
+      },
+
+      renderSavesHome(){
+        const box=$('#savesListHome'); if(!box) return;
+        const arr=Saves.all().slice(0,4);
+        if(!arr.length){ box.innerHTML='<div class="opacity-70">Noch keine Spielstände.</div>'; return; }
+        box.innerHTML=arr.map(e=>{
+          const date=new Date(e.ts).toLocaleDateString();
+          return `<div class='glass p-3'>${date}: ${e.players.length} Spieler · ${e.scoreMode==='points'?'mit':'ohne'} Punkte</div>`;
+        }).join('');
+      },
+
+      openSaveDetail(id){
+        const e=Saves.all().find(x=>x.id===id); if(!e) return;
+        $('#sdTitle').textContent='Spiel-Details';
+        $('#sdMeta').textContent=new Date(e.ts).toLocaleString()+` · ${e.players.length} Spieler · ${e.orderMode} · ${e.phaseSet} · ${e.scoreMode}`;
+
+        [sdC1,sdC2,sdC3,sdC4].forEach(c=>c&&c.destroy());
+
+        const labels=(e.handPoints||[]).map((_,i)=>`R${i+1}`);
+        const totals=(()=>{
+          const acc=e.players.map(()=>0), out=e.players.map(()=>[]);
+          (e.handPoints||[]).forEach(P=>{
+            if(P && (Object.keys(P).length===e.players.length || e.scoreMode==='phases')){
+              e.players.forEach((pl,pi)=>{ acc[pi]+= (P[pl]??0); });
+            }
+            e.players.forEach((_,pi)=> out[pi].push(acc[pi]) );
+          });
+          return out;
+        })();
+        const ds=totals.map((arr,i)=>({ label:e.players[i], data:arr, tension:.25 }));
+        sdC1=new Chart($('#sdPoints'),{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }});
+
+        const scorePairs=Object.entries(e.totals||{}).sort((a,b)=>a[1]-b[1]);
+        sdC2=new Chart($('#sdScores'),{ type:'bar', data:{labels:scorePairs.map(x=>x[0]), datasets:[{label:'Endpunkte', data:scorePairs.map(x=>x[1])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
+
+        const phases=(()=>{
+          const m=Object.fromEntries((e.players||[]).map(p=>[p,0]));
+          (e.phaseDone||[]).forEach(R=>{ if(R) (e.players||[]).forEach(p=>{ if(R[p]) m[p]++; }); });
+          return m;
+        })();
+        sdC3=new Chart($('#sdPhases'),{ type:'bar', data:{labels:e.players, datasets:[{label:'Phasen', data:e.players.map(p=>Math.min(phases[p]||0,10))}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
+
+        const outs=(()=>{
+          const m=Object.fromEntries((e.players||[]).map(p=>[p,0]));
+          (e.outs||[]).forEach(o=>{ if(o) m[o]++; });
+          return m;
+        })();
+        sdC4=new Chart($('#sdOuts'),{ type:'bar', data:{labels:e.players, datasets:[{label:'Rundensiege', data:e.players.map(p=>outs[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
+
+        // Wenn ohne Punkte gespielt wurde, Punkte-Charts optisch weniger wichtig – aber wir lassen sie leer stehen
+      },
+      closeSaveDetail(){ [sdC1,sdC2,sdC3,sdC4].forEach(c=>c&&c.destroy()); $('#saveDetail').classList.add('hidden'); },
+
+      _emptyBox(id, text){
+        const box=document.querySelector(`[data-chartbox="${id}"]`);
+        if(!box) return;
+        box.querySelector('.h-240').innerHTML=`<div class="h-240 flex items-center justify-center opacity-70 text-center px-4">${text}</div>`;
+      },
+      _ensureCanvas(id){
+        const box=document.querySelector(`[data-chartbox="${id}"]`);
+        if(!box) return null;
+        const wrap=box.querySelector('.h-240');
+        wrap.innerHTML=`<canvas id="${id}"></canvas>`;
+        return document.getElementById(id);
+      },
+
+      updateCharts(){
+        const havePlayers=S.players.length>=2;
+        const anyRound = S.handPoints.length>0 || S.phaseDone.length>0;
+
+        [chartPoints,chartPhases,chartOuts,chartExtremes].forEach(c=>c&&c.destroy());
+
+        if(!(havePlayers && anyRound)){
+          this._emptyBox('chartPoints','Noch keine Runden – starte ein Spiel.');
+          this._emptyBox('chartPhases','Noch keine Phasenfortschritte.');
+          this._emptyBox('chartOuts','Noch keine Rundensiege.');
+          this._emptyBox('chartExtremes','Noch keine Werte.');
+          return;
+        }
+
+        const c1=this._ensureCanvas('chartPoints'), c2=this._ensureCanvas('chartPhases'),
+              c3=this._ensureCanvas('chartOuts'), c4=this._ensureCanvas('chartExtremes');
+
+        const labels=S.handPoints.map((_,i)=>`R${i+1}`);
+        const totals=Analytics.perRoundTotals();
+        const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
+
+        const phases=playerPhaseCount();
+        const outs=Analytics.outsCount();
+        const ex=Analytics.extremes();
+
+        chartPoints=new Chart(c1,{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }});
+        chartPhases=new Chart(c2,{ type:'bar', data:{labels:S.players, datasets:[{label:'Phasen', data:S.players.map(p=>Math.min(phases[p]||0,10))}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        chartOuts=new Chart(c3,{ type:'bar', data:{labels:S.players, datasets:[{label:'Rundensiege', data:S.players.map(p=>outs[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        chartExtremes=new Chart(c4,{ type:'bar', data:{labels:S.players, datasets:[{label:'Höchste Handpunkte', data:S.players.map(p=>ex.maxHand[p])}]}, options:{responsive:true, maintainAspectRatio:false}});
+
+        // Bei „Ohne Punkte“: Punkte-Chart neutral anzeigen
+        if(S.scoreMode==='phases'){
+          c1.parentElement.innerHTML = '<div class="h-240 flex items-center justify-center opacity-70 text-center px-4">Punkte-Chart nicht relevant (Ohne Punkte).</div>';
+        }
+      },
+
+      updateGlobalCharts(){
+        [gaWins,gaAvg,gaBestLow,gaPhases,gaOuts,gaMaxHand].forEach(c=>c&&c.destroy());
+        const all=Saves.all();
+
+        if(!all.length){
+          this._emptyBox('gaWins','Noch keine gespeicherten Spiele.');
+          this._emptyBox('gaAvgScore','—');
+          this._emptyBox('gaBestScore','—');
+          this._emptyBox('gaPhases','—');
+          this._emptyBox('gaOuts','—');
+          return;
+        }
+
+        // leichte Aggregation: winners nur im Punkte-Modus zuverlässig, ansonsten Phasenstand
+        const games={}, wins={}, sumScore={}, bestLow={}, sumPhase={}, sumOuts={};
+        all.forEach(e=>{
+          (e.players||[]).forEach(p=>{ games[p]=(games[p]||0)+1; sumScore[p]=(sumScore[p]||0)+(e.totals?.[p]||0); });
+          // Gewinner im Punkte-Modus bestimmen
+          if(e.scoreMode==='points'){
+            const phases=(e.phaseDone||[]).reduce((m,R)=>{ (e.players||[]).forEach(p=>{ if(R?.[p]) m[p]=(m[p]||0)+1; }); return m; },{});
+            const fin=(e.players||[]).filter(p=> (phases[p]||0)>=10);
+            if(fin.length){
+              const min=Math.min(...fin.map(p=>e.totals?.[p]||0));
+              fin.filter(p=>(e.totals?.[p]||0)===min).forEach(w=> wins[w]=(wins[w]||0)+1);
+            }
+          }
+          // Phasen & Outs
+          const phasesCount=(e.phaseDone||[]).reduce((m,R)=>{ (e.players||[]).forEach(p=>{ if(R?.[p]) m[p]=(m[p]||0)+1; }); return m; },{});
+          (e.players||[]).forEach(p=>{ sumPhase[p]=(sumPhase[p]||0)+(phasesCount[p]||0); });
+          const outsCount=(e.outs||[]).reduce((m,o)=>{ if(o) m[o]=(m[o]||0)+1; return m; },{});
+          (e.players||[]).forEach(p=>{ sumOuts[p]=(sumOuts[p]||0)+(outsCount[p]||0); });
+          (e.players||[]).forEach(p=>{ bestLow[p]= Math.min(bestLow[p]??Infinity, e.totals?.[p]??Infinity); });
+        });
+
+        const players=Object.keys(games).sort((a,b)=>(wins[b]||0)-(wins[a]||0));
+        const pick=(f)=> players.map(p=>f(p));
+
+        const c1=this._ensureCanvas('gaWins'), c2=this._ensureCanvas('gaAvgScore'),
+              c3=this._ensureCanvas('gaBestScore'), c4=this._ensureCanvas('gaPhases'),
+              c5=this._ensureCanvas('gaOuts');
+
+        gaWins=new Chart(c1,{ type:'bar', data:{labels:players, datasets:[{label:'Spiel-Siege (nur Punkte-Modus)', data:pick(p=>wins[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        gaAvg=new Chart(c2,{ type:'bar', data:{labels:players, datasets:[{label:'Ø Endpunkte', data:pick(p=> Math.round((sumScore[p]/(games[p]||1))*10)/10)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        gaBestLow=new Chart(c3,{ type:'bar', data:{labels:players, datasets:[{label:'Beste (niedrigste) Punkte', data:pick(p=> (bestLow[p]===Infinity?0:bestLow[p]))}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        gaPhases=new Chart(c4,{ type:'bar', data:{labels:players, datasets:[{label:'Ø Phasen', data:pick(p=> Math.round((sumPhase[p]/(games[p]||1))*10)/10)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        gaOuts=new Chart(c5,{ type:'bar', data:{labels:players, datasets:[{label:'Rundensiege', data:pick(p=> sumOuts[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+      },
+
+      restart(){ Storage.clear(); location.reload(); }
+    };
+
+    /* ---------- Game flow ---------- */
+    const Game = {
+      // Punkte-Modus: Zahlenfeld – gesperrt, wenn aktueller Spieler als Ausspieler markiert ist
+      d(x){ const cur=S.players[S.stepIndex%S.players.length]; if(S.scoreMode!=='points') return; if(S.selOut===cur) return; if(buf.length<3){ buf+=x; $('#numberDisplay').textContent=buf; } },
+      cl(){ if(S.scoreMode!=='points') return; buf=''; const cur=S.players[S.stepIndex%S.players.length]; if(S.selOut!==cur) $('#numberDisplay').textContent='0'; },
+
+      ok(){
+        if(S.scoreMode!=='points') return;
+        const player=S.players[S.stepIndex%S.players.length];
+        let val=parseInt(buf||'0',10); if(!Number.isFinite(val)||val<0) val=0;
+        if(S.selOut===player) val=0; // Ausspieler bekommt automatisch 0
+
+        if(!S.handPoints[S.round-1]) S.handPoints[S.round-1]={};
+        if(!S.phaseDone[S.round-1]) S.phaseDone[S.round-1]={};
+
+        S.handPoints[S.round-1][player]=val;
+        S.phaseDone[S.round-1][player]=!!tmpPhaseDone;
+        S.history.push({type:'entry', r:S.round-1, player, points:val, phase:!!tmpPhaseDone});
+
+        // nächster Spieler
+        S.stepIndex++;
+
+        // Rundenabschluss?
+        const roundFull = (S.stepIndex % S.players.length===0);
+        if(roundFull){
+          if(!S.selOut){
+            UI.toast('Bitte genau einen Ausspieler markieren.');
+            // zurück zum Rundenbeginn, Eingaben bleiben erhalten, Ausspieler kann jetzt markiert werden
+            S.stepIndex -= S.players.length;
+            UI.top(); UI.tables(); Storage.save();
+            return;
+          }
+          S.outs[S.round-1]=S.selOut; // fixiere Ausspieler
+          S.selOut=null;
+          S.round++;
+        }
+
+        // Reset Flags/Anzeige
+        tmpPhaseDone=false; $('#btnPhaseDone').classList.remove('active');
+        $('#btnOut').classList.remove('active');
+        this.cl(); recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+
+        // Auto-Ende: jemand auf Phase 10?
+        const phases=playerPhaseCount();
+        if(S.players.some(p=> (phases[p]||0)>=10)){ Handlers.end(true); }
+      },
+
+      // Ohne Punkte: Sofort-Aktionen mit großen Buttons
+      quick(kind){
+        if(S.scoreMode!=='phases') return;
+        const r=S.round-1, player=S.players[S.stepIndex%S.players.length];
+        if(!S.phaseDone[r]) S.phaseDone[r]={};
+        if(!S.handPoints[r]) S.handPoints[r]={}; // bleibt leer/optional
+
+        if(kind==='out'){ S.phaseDone[r][player]=true; S.selOut=player; }
+        else if(kind==='done'){ S.phaseDone[r][player]=true; }
+        else if(kind==='fail'){ S.phaseDone[r][player]=false; }
+
+        S.history.push({type:'quick', r, player, act:kind});
+
+        // nächster Spieler
+        S.stepIndex++;
+        const roundFull = (S.stepIndex % S.players.length===0);
+        if(roundFull){
+          // „Ohne Punkte“: Ausspieler optional – setze fest, wenn gewählt
+          if(S.selOut){ S.outs[r]=S.selOut; }
+          S.selOut=null;
+          S.round++;
+        }
+
+        UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+
+        // Auto-Ende bei Phase 10
+        const phases=playerPhaseCount();
+        if(S.players.some(p=> (phases[p]||0)>=10)){ Handlers.end(true); }
+      }
+    };
+
+    /* ---------- Handlers ---------- */
+    const Handlers = {
+      start(){
+        const players=[...document.querySelectorAll('#playerInputs input')].map(i=>i.value.trim()).filter(Boolean);
+        if(players.length<2 || players.length>6){ $('#setupError').textContent='Bitte 2–6 Spieler angeben.'; return; }
+        S.players=players;
+
+        if(S.phaseSet==='custom'){
+          const inputs=$$('#customPhaseInputs input');
+          S.customPhases=inputs.map(inp=> inp.value.trim() || inp.placeholder);
+          if(S.customPhases.length!==10){ $('#setupError').textContent='Bitte genau 10 Phasen definieren.'; return; }
+        }
+
+        // Reset State
+        S.round=1; S.stepIndex=0; S.selOut=null;
+        S.handPoints=[]; S.phaseDone=[]; S.outs=[];
+        S.history=[]; S.savedFinal=false;
+        S.totals=Object.fromEntries(players.map(p=>[p,0]));
+
+        recalcTotals(); Storage.save(); showView('game'); UI.applyMode(); UI.top(); UI.tables(); UI.updateCharts();
+      },
+      load(){
+        if(Storage.load()){
+          recalcTotals(); showView('game'); UI.applyMode(); UI.top(); UI.tables(); UI.updateCharts();
+        }
+      },
+      reset(){ if(confirm('Wirklich alles zurücksetzen?')){ Storage.clear(); location.reload(); } },
+      delRound(i){
+        if(!confirm(`Eingaben in Runde ${i+1} löschen?`)) return;
+        S.handPoints[i]={}; S.phaseDone[i]={}; S.outs[i]=null;
+        S.round=i+1; S.stepIndex=0; S.selOut=null; S.history.push({type:'wipeRound', r:i});
+        recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+      },
+      redoRound(){
+        const r=S.round-1; if(r<0) return;
+        if(!confirm(`Runde ${S.round} neu eingeben?`)) return;
+        S.handPoints[r]={}; S.phaseDone[r]={}; S.outs[r]=null; S.stepIndex=0; S.selOut=null;
+        $('#inputError').textContent='';
+        recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+      },
+      end(auto=false){
+        recalcTotals(); UI.final(); $('#endView').classList.remove('hidden');
+
+        // End-Charts
+        try{
+          endCharts.forEach(c=>c&&c.destroy()); endCharts=[];
+          const labels=S.handPoints.map((_,i)=>`R${i+1}`);
+          const totals=Analytics.perRoundTotals();
+          const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
+          endCharts.push(new Chart($('#endC1'),{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}} }));
+          endCharts.push(new Chart($('#endC2'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Punkte', data:S.players.map(p=>S.totals[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} }));
+          const phases=playerPhaseCount();
+          endCharts.push(new Chart($('#endC3'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Phasen', data:S.players.map(p=>Math.min(phases[p]||0,10))}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} }));
+          const outs=Analytics.outsCount();
+          endCharts.push(new Chart($('#endC4'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Rundensiege', data:S.players.map(p=>outs[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} }));
+        }catch{}
+
+        if(!S.savedFinal){ Saves.saveFinished(true); S.savedFinal=true; Storage.save(); }
+
+        if(!auto){
+          const colors=['#6366f1','#38bdf8','#fbbf24','#34d399','#f472b6','#a5b4fc','#818cf8','#fca5a5','#bef264'];
+          for(let i=0;i<64;i++){
+            const d=document.createElement('div'); d.style.position='fixed'; d.style.zIndex=99999; d.style.pointerEvents='none';
+            d.style.width=(8+Math.random()*8)+'px'; d.style.height=(14+Math.random()*16)+'px'; d.style.borderRadius='4px';
+            d.style.left=(8+Math.random()*84)+'vw'; d.style.top='-80px'; d.style.opacity=.92; d.style.background = colors[Math.random()*colors.length|0];
+            d.animate([{ transform:`translateY(-80px) rotate(0deg)`, opacity:1 },{ transform:`translateY(96vh) rotate(340deg)`, opacity:0 }], { duration:1200+Math.random()*800, easing:'cubic-bezier(.4,0,.4,1)', fill:'forwards' });
+            document.body.appendChild(d); setTimeout(()=>d.remove(),2000);
+          }
+        }
+      }
+    };
+
+    /* ---------- Boot ---------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        $('#year').textContent = new Date().getFullYear();
+        UI.init();
+
+        if (Storage.load()) {
+          recalcTotals();
+          showView('game');
+          UI.applyMode();
+          UI.top();
+          UI.tables();
+          UI.updateCharts();
+        } else {
+          showView('setup');
+          UI.renderSavesHome();
+        }
+
+        if (window.innerWidth <= 900) {
+          $('#sidebar').classList.remove('collapsed');
+          $('#content').classList.remove('shifted');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Init-Fehler: ' + (e?.message || e));
+      }
+    });
+  </script>
+</body>
+</html>

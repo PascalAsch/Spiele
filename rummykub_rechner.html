@@ -1,298 +1,1258 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rummikub Punkte-Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Rummikub Scoreboard – Touch Pro · © Pascal Asch</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: radial-gradient(ellipse 90% 70% at 60% 10%, #e0e7ff 0%, #93c5fd 70%, #2563eb 100%);
-      min-height: 100vh;
-      font-family: 'Inter', Arial, sans-serif;
-      color: #213045;
+    :root{
+      --bg-grad: radial-gradient(1200px 800px at 60% 10%, #a5b4fc 0%, #6366f1 60%, #0f172a 100%);
+      --glass-bg: rgba(255,255,255,.9);
+      --text:#0b1020; --muted:#334155; --accent:#6366f1; --accent2:#38bdf8;
+      --row1:#e0f2fe; --row2:#eef2ff; --head1:#e0e7ff; --head2:#f1f5fd;
+      --input-bg:#ffffff; --input-border:#c7d2fe; --input-text:#0b1020;
+      --sidebar-w: 300px; --sidebar-w-collapsed: 72px;
+      --seg-bg:#eef2ff; --seg-on:#fff; --seg-border:#c7d2fe;
     }
-    .glass {
-      background: rgba(255,255,255,0.86);
-      border-radius: 2rem;
-      box-shadow: 0 10px 40px #60a5fa44, 0 1.5px 8px #1e293b13;
-      backdrop-filter: blur(16px) saturate(1.07);
-      transition: background 0.3s, box-shadow 0.3s;
+    [data-theme="dark"]{
+      --bg-grad: radial-gradient(1200px 800px at 60% 10%, #0b122b 0%, #0a0f22 60%, #000 100%);
+      --glass-bg: rgba(17,24,39,.78);
+      --text:#e5e7eb; --muted:#94a3b8; --accent:#8b5cf6; --accent2:#22d3ee;
+      --row1:#0b122b; --row2:#0e172d; --head1:#111827; --head2:#0b122b;
+      --input-bg:#111827; --input-border:#334155; --input-text:#e5e7eb;
+      --seg-bg:#0e172d; --seg-on:#111827; --seg-border:#334155;
     }
-    .apple-btn {
-      background: linear-gradient(90deg, #3b82f6 15%, #2563eb 100%);
-      border-radius: 1rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      transition: background 0.25s, box-shadow 0.25s, transform 0.13s;
-      box-shadow: 0 4px 16px #2563eb23;
+    html,body{height:100%}
+    body{margin:0;font-family:'Inter',system-ui,Arial,sans-serif;background:var(--bg-grad);color:var(--text);overflow-x:hidden}
+
+    /* Parallax layers */
+    .plx{position:fixed;inset:-10vh -10vw;pointer-events:none;z-index:-1;filter:blur(30px);opacity:.45;transform:translate3d(0,0,0) scale(1.05);transition:opacity .6s ease}
+    .plx.l1{background:radial-gradient(900px 600px at 10% 20%, #a5b4fc55, transparent 70%)}
+    .plx.l2{background:radial-gradient(900px 600px at 80% 10%, #38bdf855, transparent 72%)}
+    .plx.l3{background:radial-gradient(900px 600px at 50% 90%, #8b5cf655, transparent 72%)}
+    [data-theme="dark"] .plx{opacity:.28}
+
+    .glass{background:var(--glass-bg);backdrop-filter:blur(14px) saturate(1.05);border-radius:18px;box-shadow:0 10px 40px #0000003a}
+    .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;padding:.85rem 1rem;font-weight:800}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
+    .btn-muted{background:#e5e7eb}
+    [data-theme="dark"] .btn-muted{background:#1f2937;color:#e5e7eb}
+    .btn-danger{background:#ef4444;color:#fff}
+    .table-head-1{background:var(--head1);color:var(--text);font-weight:900}
+    .table-head-2{background:var(--head2);color:var(--muted)}
+    .row-tip{background:var(--row1)}
+    .row-res{background:var(--row2)}
+    .input{background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text)}
+    .sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);padding:14px;display:flex;flex-direction:column;gap:12px;transition:width .25s ease}
+    .sidebar.collapsed{width:var(--sidebar-w-collapsed)}
+    .content{margin-left:calc(var(--sidebar-w) + 16px);min-height:100vh;padding:14px;transition:margin-left .25s ease}
+    .content.shifted{margin-left:calc(var(--sidebar-w-collapsed) + 16px)}
+    .icon-label{margin-left:.5rem}
+    .sidebar.collapsed .icon-label{display:none}
+    @media (max-width: 900px){
+      .sidebar{transform:translateX(-110%);box-shadow:none}
+      .sidebar.open{transform:translateX(0);z-index:50}
+      .content{margin-left:0}
+      .content.shifted{margin-left:0}
+      #mobileShade{display:none}
+      .sidebar.open + #mobileShade{display:block;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40}
     }
-    .apple-btn:hover, .apple-btn:focus {
-      background: linear-gradient(90deg, #2563eb 10%, #60a5fa 90%);
-      box-shadow: 0 7px 24px #60a5fa33;
-      transform: scale(1.03);
-    }
-    /* Konfetti: optional, bei Bedarf */
-    @keyframes confetti-fall {
-      0% { transform: translateY(-60px) rotateZ(0); opacity: 1;}
-      100% { transform: translateY(600px) rotateZ(360deg); opacity: 0;}
-    }
-    .confetti {
-      position: fixed;
-      top: -60px;
-      width: 14px; height: 14px; border-radius: 4px;
-      opacity: .9; z-index: 60;
-      pointer-events: none;
-      animation: confetti-fall 1.7s linear forwards;
-    }
+    #view-game .grid-2cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 1024px){ #view-game .grid-2cols{grid-template-columns:1fr} }
+    .leftPanel{display:grid;grid-template-rows:auto 1fr auto;gap:12px;height:calc(100vh - 28px)}
+    .rightPanel{height:calc(100vh - 28px);overflow:auto}
+    #keypadWrap{position:sticky;bottom:env(safe-area-inset-bottom);z-index:10}
+    .h-180{height:180px}
+    .h-240{height:240px}
+    #endView{z-index:99990}
+    #saveDetail{z-index:99995}
+
+    /* Segmented controls */
+    .seg{display:flex;flex-wrap:wrap;background:var(--seg-bg);border:1px solid var(--seg-border);border-radius:14px;padding:6px;gap:6px;min-width:0}
+    .seg button{flex:1 1 140px;border-radius:10px;padding:.6rem .8rem;font-weight:700;color:var(--muted);background:transparent;border:1px solid transparent;white-space:nowrap}
+    .seg button.active{background:var(--seg-on);color:var(--text);border:1px solid var(--seg-border)}
+
+    .setup-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+    @media (max-width: 768px){ .setup-opts{grid-template-columns:1fr} }
+    .minw0{min-width:0}
+
+    /* Center warning toast */
+    #toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99999;display:none}
+    #toast .bubble{padding:1rem 1.2rem;border-radius:14px;font-weight:800;box-shadow:0 10px 30px #00000033}
+
+    /* End overlay inner scroll */
+    #endView .panel{display:flex;flex-direction:column}
+    #endScroll{overflow:auto;max-height:50vh}
   </style>
 </head>
-<body class="flex flex-col items-center justify-center w-full min-h-screen p-2">
+<body>
+  <!-- Parallax layers -->
+  <div class="plx l1"></div>
+  <div class="plx l2"></div>
+  <div class="plx l3"></div>
 
-  <!-- Rechtlicher Hinweis: MODAL -->
-  <div id="legalModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-    <div class="glass p-8 rounded-3xl shadow-2xl max-w-xl w-full flex flex-col items-center text-center animate-fadeIn" style="backdrop-filter: blur(22px) saturate(1.2);">
-      <h2 class="text-2xl font-bold mb-3 text-blue-800">Hinweis</h2>
-      <p class="mb-5 text-blue-900">
-        <strong>Dieser Rummikub Punkte-Tracker</strong> steht in <b>keinem Zusammenhang mit dem offiziellen Hersteller</b> oder Markeninhaber von Rummikub.<br>
-        Es handelt sich um ein unabhängiges Fan-Projekt zur Erleichterung der Punkteverwaltung.<br>
-        Die Nutzung erfolgt auf eigene Verantwortung. Es besteht keine Garantie auf Fehlerfreiheit.
-      </p>
-      <button onclick="closeLegalModal()" class="apple-btn w-full max-w-xs py-3 text-white text-lg shadow mt-2">Akzeptieren & Starten</button>
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar glass">
+    <div class="flex items-center justify-between gap-2">
+      <button id="btnCollapse" class="btn btn-muted" title="Sidebar ein-/ausklappen">☰</button>
+    </div>
+    <div class="grid gap-2 mt-1">
+      <button class="btn btn-muted" data-nav="setup">🏠 <span class="icon-label">Start / Setup</span></button>
+      <button class="btn btn-muted" data-nav="game">📋 <span class="icon-label">Scoreboard</span></button>
+      <button class="btn btn-muted" data-nav="analytics">📈 <span class="icon-label">Analytics</span></button>
+      <button class="btn btn-muted" data-nav="history">🗂️ <span class="icon-label">Spielstände</span></button>
+      <button class="btn btn-muted" data-nav="rules">📜 <span class="icon-label">Regeln</span></button>
+      <button class="btn btn-muted" data-nav="settings">⚙️ <span class="icon-label">Settings</span></button>
+      <button id="btnHome" class="btn btn-primary">🏠 <span class="icon-label">Zur Startseite</span></button>
+    </div>
+    <div class="text-xs opacity-80 mt-auto">© <span id="year"></span> Pascal Asch</div>
+  </aside>
+  <div id="mobileShade"></div>
+
+  <!-- CONTENT -->
+  <main id="content" class="content">
+    <!-- SETUP -->
+    <section id="view-setup" class="grid xl:grid-cols-2 gap-3">
+      <div class="glass p-4 grid gap-4">
+        <h1 class="text-2xl font-black" style="color:var(--accent)">Start / Setup</h1>
+
+        <div class="grid gap-2">
+          <label class="font-semibold">Spieler</label>
+          <div id="playerInputs" class="space-y-2">
+            <input class="input w-full px-4 py-4 rounded-xl" type="text" placeholder="Spieler 1" oninput="UI.addNext(this)">
+          </div>
+          <div class="text-sm" style="color:var(--muted)">Reihenfolge = Sitzreihenfolge (Eingabe pro Runde in dieser Reihenfolge).</div>
+        </div>
+
+        <div class="setup-opts">
+          <div class="grid gap-2 minw0">
+            <label class="font-semibold">Wertung</label>
+            <div id="segScore" class="seg">
+              <button data-val="classic" class="active">Classic (Winner + Summe)</button>
+              <button data-val="negOnly">Nur Minuspunkte</button>
+            </div>
+          </div>
+
+          <div class="grid gap-2 minw0">
+            <label class="font-semibold">Ziel</label>
+            <div id="segTarget" class="seg">
+              <button data-val="points" class="active">Punktziel</button>
+              <button data-val="rounds">Rundenanzahl</button>
+            </div>
+            <div id="targetPointsWrap" class="grid grid-cols-2 gap-2 text-sm mt-1">
+              <label class="flex items-center">Punktziel: <input id="targetPts" type="number" min="10" class="input ml-2 w-24 px-2 py-1 rounded" value="200"></label>
+              <label class="flex items-center">Joker: <input id="joker" type="number" min="10" class="input ml-2 w-24 px-2 py-1 rounded" value="30"></label>
+            </div>
+            <div id="targetRoundsWrap" class="hidden grid grid-cols-2 gap-2 text-sm mt-1">
+              <label class="flex items-center">Runden: <input id="targetR" type="number" min="1" class="input ml-2 w-24 px-2 py-1 rounded" value="10"></label>
+              <label class="flex items-center">Joker: <input id="jokerR" type="number" min="10" class="input ml-2 w-24 px-2 py-1 rounded" value="30"></label>
+            </div>
+          </div>
+
+          <div class="col-span-2 text-sm" style="color:var(--muted)">
+            Hinweis: Joker zählt i. d. R. <b>30</b> Punkte in der Hand. Die Summe tragt ihr pro Spieler ein (Gewinner = 0).
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <button id="btnStart" class="btn btn-primary text-lg">🚀 Spiel starten</button>
+          <button id="btnLoad" class="btn btn-muted text-lg hidden">📂 Fortsetzen</button>
+          <button id="btnOpenSaves" class="btn btn-muted text-lg" data-nav="history">💾 Spielstände</button>
+        </div>
+        <div id="setupError" class="text-red-500 font-semibold text-center"></div>
+      </div>
+
+      <!-- rechte Home-Spalte -->
+      <div class="grid gap-3">
+        <div class="glass p-4">
+          <h2 class="font-extrabold mb-3" style="color:var(--accent)">Regeln (Kurz & klar)</h2>
+          <div class="grid sm:grid-cols-2 gap-2 text-sm">
+            <div class="glass p-3"><div class="font-bold mb-1">Ziel</div><div>Als erster auslegen/abwerfen. Runde endet, wenn jemand alle Steine legt.</div></div>
+            <div class="glass p-3"><div class="font-bold mb-1">Wertung</div><div>Gewinner: + Summe der gegnerischen Reststeine. Alle anderen: − ihre eigene Summe.</div></div>
+            <div class="glass p-3"><div class="font-bold mb-1">Werte</div><div>Zahlen 1–13 = Ziffernwert · Joker = meist 30.</div></div>
+            <div class="glass p-3"><div class="font-bold mb-1">Varianten</div><div>Optional: Nur Minuspunkte (Gewinner 0).</div></div>
+          </div>
+          <div class="mt-3 flex justify-center"><button class="btn btn-muted" data-nav="rules">Mehr Regeln →</button></div>
+        </div>
+
+        <div class="glass p-4">
+          <h2 class="font-extrabold mb-2" style="color:var(--accent)">Schnellzugriff: Analytics</h2>
+          <div class="text-sm" style="color:var(--muted)">Live-Charts pro Spiel & globale Hall of Fame.</div>
+          <div class="mt-3 flex justify-center"><button class="btn btn-muted" data-nav="analytics">Analytics öffnen →</button></div>
+        </div>
+
+        <div class="glass p-4">
+          <h2 class="font-extrabold mb-2" style="color:var(--accent)">Letzte Spielstände</h2>
+          <div id="savesListHome" class="grid gap-2 text-sm"></div>
+          <div class="mt-2 flex justify-center"><button class="btn btn-muted" data-nav="history">Alle Spielstände →</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="view-game" class="hidden">
+      <div class="grid-2cols">
+        <!-- LEFT -->
+        <div class="leftPanel">
+          <div class="glass p-4 grid md:grid-cols-3 gap-2">
+            <div>
+              <div class="text-sm" style="color:var(--muted)">Runde</div>
+              <div id="roundProgress" class="text-2xl font-extrabold -mt-1">1/—</div>
+            </div>
+            <div id="targetLine" class="text-sm md:text-base">🎯 Ziel: –</div>
+            <div id="lastWinnerLine" class="text-sm md:text-base">🏁 Letzter Gewinner: –</div>
+          </div>
+
+          <div class="glass p-4 grid gap-2">
+            <div id="phaseTitle" class="text-xl font-extrabold" style="color:var(--accent)">Hand-Summen</div>
+            <div id="phaseHint" class="text-sm" style="color:var(--muted)">Gewinner = 0 · Joker zählt <span id="jokerHint">30</span></div>
+            <div id="whoPrompt" class="text-2xl font-bold">Hand-Summe für …?</div>
+            <div id="numberDisplay" class="text-6xl font-black select-none" style="color:var(--accent)">0</div>
+            <div id="remainInfo" class="text-sm" style="color:var(--muted)"></div>
+            <div id="inputError" class="text-red-500 font-semibold min-h-[1.2em]"></div>
+          </div>
+
+          <div id="keypadWrap" class="glass p-3">
+            <div class="grid grid-cols-3 gap-2 select-none">
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('1')">1</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('2')">2</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('3')">3</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('4')">4</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('5')">5</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('6')">6</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('7')">7</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('8')">8</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('9')">9</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.cl()">⌫</button>
+              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('0')">0</button>
+              <button class="py-5 rounded-xl text-white text-2xl font-black" style="background:linear-gradient(90deg,var(--accent),var(--accent2))" onclick="Game.ok()">OK</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="rightPanel">
+          <div class="glass p-3">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-bold" style="color:var(--accent)">🧮 Rundenverlauf</h2>
+              <div class="hidden md:flex gap-2">
+                <button id="btnRedoRound" class="btn btn-muted">🔁 Runde neu</button>
+                <button id="btnEnd" class="btn btn-primary">🏁 Beenden</button>
+                <button id="btnReset" class="btn btn-danger">🔄 Reset</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm text-center" id="roundTable">
+                <thead>
+                  <tr class="table-head-1" id="hdr1"></tr>
+                  <tr class="table-head-2" id="hdr2"></tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="view-analytics" class="hidden grid gap-3">
+      <div class="glass p-3 flex gap-2 justify-between items-center">
+        <div class="font-extrabold" style="color:var(--accent)">Analytics</div>
+        <div class="flex gap-2">
+          <button id="btnAnaCurrent" class="btn btn-muted">Aktuelles Spiel</button>
+          <button id="btnAnaGlobal" class="btn btn-primary">Alle Spielstände</button>
+        </div>
+      </div>
+
+      <div id="ana-current" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="glass p-4" data-chartbox="chartPoints"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Punkteverlauf (Runden)</h3><div class="h-240"><canvas id="chartPoints"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="chartCorrect"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Rundensiege</h3><div class="h-240"><canvas id="chartCorrect"></canvas></div></div>
+        <div class="glass p-4 lg:col-span-2" data-chartbox="chartExtremes"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Extrema: Höchste Runde / Größte Minusrunde</h3><div class="h-240"><canvas id="chartExtremes"></canvas></div></div>
+        <div class="glass p-4 lg:col-span-2" data-chartbox="chartAccuracy"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø Hand-Summe</h3><div class="h-240"><canvas id="chartAccuracy"></canvas></div></div>
+      </div>
+
+      <div id="ana-global" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="glass p-4" data-chartbox="gaWins"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Spiel-Siege (alle Spiele)</h3><div class="h-240"><canvas id="gaWins"></canvas></div></div>
+        <div class="glass p-4" data-chartbox="gaAvgScore"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø Endpunkte pro Spieler</h3><div class="h-240"><canvas id="gaAvgScore"></canvas></div></div>
+        <div class="glass p-4 lg:col-span-2" data-chartbox="gaBestScore"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Beste Endpunkte (Highscore)</h3><div class="h-240"><canvas id="gaBestScore"></canvas></div></div>
+        <div class="glass p-4 lg:col-span-2" data-chartbox="gaAccuracy"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø Hand-Summe (alle Spiele)</h3><div class="h-240"><canvas id="gaAccuracy"></canvas></div></div>
+        <div class="glass p-4 lg:col-span-2" data-chartbox="gaExtremes"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Extrema über alle Spiele</h3><div class="h-240"><canvas id="gaExtremes"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="hidden grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div class="glass p-4 md:col-span-2 xl:col-span-3 flex items-center justify-between">
+        <h3 class="text-xl font-extrabold" style="color:var(--accent)">Spielstände & Hall of Fame</h3>
+        <div class="flex gap-2">
+          <button class="btn btn-muted" onclick="Saves.exportJSON()">⬇️ Export JSON</button>
+          <button class="btn btn-muted" onclick="Saves.importJSON()">⬆️ Import JSON</button>
+        </div>
+      </div>
+      <div id="savesList" class="grid md:grid-cols-2 xl:grid-cols-3 gap-3 md:col-span-2 xl:col-span-3"></div>
+    </section>
+
+    <!-- RULES -->
+    <section id="view-rules" class="hidden grid gap-3">
+      <div class="glass p-5">
+        <h3 class="text-xl font-extrabold mb-4" style="color:var(--accent)">Regeln (Rummikub – kompakt)</h3>
+        <div class="grid lg:grid-cols-2 gap-3 text-sm">
+          <div class="glass p-4"><div class="font-bold mb-1">1) Ziel</div><div>Sets/Serien bilden und als erster alle Steine ablegen.</div></div>
+          <div class="glass p-4"><div class="font-bold mb-1">2) Rundenende</div><div>Wenn jemand „aus“ ist. Alle anderen zählen ihre Hand (Zahlenwert, Joker i. d. R. 30).</div></div>
+          <div class="glass p-4"><div class="font-bold mb-1">3) Wertung</div><div>Classic: Gewinner + Summe der Gegner-Hände, andere – eigene Hand. Variante: Nur Minuspunkte.</div></div>
+          <div class="glass p-4"><div class="font-bold mb-1">4) Spielsieg</div><div>Nach Punktziel (z. B. 200) oder fester Rundenanzahl gewinnt der höchste Gesamtwert.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="hidden grid gap-3">
+      <div class="glass p-4 flex items-center justify-between">
+        <div>
+          <div class="font-semibold">Dark Mode</div>
+          <div class="text-sm" style="color:var(--muted)">Schaltet die edle Nachtansicht um.</div>
+        </div>
+        <label class="inline-flex items-center cursor-pointer">
+          <input id="toggleDark" type="checkbox" class="sr-only peer">
+          <div class="w-14 h-8 bg-gray-300 rounded-full peer-checked:bg-indigo-500 relative">
+            <div class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-all peer-checked:left-7"></div>
+          </div>
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <!-- END OVERLAY -->
+  <div id="endView" class="hidden fixed inset-0 bg-black/30 p-3 md:p-8">
+    <div id="endContainer" class="mx-auto max-w-6xl grid md:grid-cols-2 gap-4 md:gap-6 h-full">
+      <section class="glass p-4 md:p-6 panel">
+        <h3 class="text-3xl font-extrabold mb-2" style="color:var(--accent)">Endergebnis</h3>
+        <div id="finalResult" class="mb-3"></div>
+        <div id="extraStats" class="mb-4"></div>
+        <div id="endScroll" class="grid grid-cols-1 gap-3">
+          <div class="glass p-3"><div class="font-bold mb-1">Punkteverlauf</div><div class="h-180"><canvas id="endC1"></canvas></div></div>
+          <div class="glass p-3"><div class="font-bold mb-1">Endpunkte</div><div class="h-180"><canvas id="endC2"></canvas></div></div>
+          <div class="glass p-3"><div class="font-bold mb-1">Rundensiege</div><div class="h-180"><canvas id="endC3"></canvas></div></div>
+          <div class="glass p-3"><div class="font-bold mb-1">Extrema</div><div class="h-180"><canvas id="endC4"></canvas></div></div>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <button class="btn btn-primary" onclick="UI.csv()">⬇️ CSV</button>
+          <button class="btn btn-danger" onclick="UI.restart()">Neues Spiel</button>
+        </div>
+      </section>
+      <section class="glass p-4 md:p-6 panel">
+        <h3 class="text-2xl font-bold mb-2" style="color:var(--accent)">Abschließender Verlauf</h3>
+        <div class="overflow-x-auto grow">
+          <table class="min-w-full text-sm text-center" id="finalTable">
+            <thead class="table-head-1">
+              <tr id="finalHdr"></tr>
+            </thead>
+            <tbody id="finalBody"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
 
-  <!-- Startseite mit Spielname und Regeln -->
-  <div id="welcome" class="max-w-6xl mx-auto glass rounded-3xl shadow-xl p-6 mt-4 w-full">
-    <h1 class="text-3xl font-black text-center mb-6 text-blue-700 drop-shadow">Rummikub Punkte-Tracker</h1>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Link: Spieler hinzufügen -->
-      <div>
-        <h2 class="text-xl font-semibold mb-4 text-blue-600">Spieler hinzufügen</h2>
-        <div id="playerInputs" class="space-y-2 mb-4">
-          <input type="text" placeholder="Spieler 1" class="w-full px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 focus:outline-blue-400 transition" oninput="addNextPlayerInput(this)">
+  <!-- SAVE DETAIL OVERLAY -->
+  <div id="saveDetail" class="hidden fixed inset-0 bg-black/40 p-3 md:p-6">
+    <div class="glass mx-auto max-w-7xl w-full h-[calc(100vh-24px)] md:h-[calc(100vh-48px)] p-4 md:p-6 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <div id="sdTitle" class="text-xl font-extrabold" style="color:var(--accent)">Spiel-Details</div>
+          <div id="sdMeta" class="text-sm" style="color:var(--muted)"></div>
         </div>
-        <button onclick="startGame()" class="apple-btn w-full py-3 text-white text-lg shadow">Spiel starten</button>
+        <div class="flex gap-2">
+          <button id="btnSdClose" class="btn btn-muted">✖️ Schließen</button>
+        </div>
       </div>
-      <!-- Rechts: Regeln -->
-      <div>
-        <h2 class="text-xl font-semibold mb-4 text-blue-600">Regeln für Rummikub</h2>
-        <div class="overflow-y-auto h-[340px] space-y-2 text-sm text-blue-800 pr-2">
-          <p><strong>Ziel:</strong> Lege alle Steine zuerst ab & erhalte möglichst wenig Minuspunkte.</p>
-          <p>Es gibt 52 Steine in vier Farben (Schwarz, Blau, Rot, Gelb) mit Zahlen 1–13 (je zweimal) plus 2 Joker.</p>
-          <p>Jeder zieht 14 Steine (verdeckt), nur der Ziehende darf sie sehen.</p>
-          <p>Erste Auslage: Mindestens 30 Punkte mit Reihen (z.B. 4–5–6 in Blau) oder Gruppen (z.B. drei Siebener in versch. Farben).</p>
-          <p>Wer nicht auslegen kann, zieht einen Stein. Danach darf beliebig an- oder umgebaut werden, solange alles gültig bleibt.</p>
-          <p>Wer zuerst alle Steine ablegt, gewinnt. Alle übrigen Steine zählen als Minuspunkte (Joker = -30!), die der/die Gewinner:in als Pluspunkte bekommt.</p>
-        </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 overflow-hidden">
+        <div class="glass p-3"><div class="font-bold mb-1">Punkteverlauf</div><div class="h-240"><canvas id="sdPoints"></canvas></div></div>
+        <div class="glass p-3"><div class="font-bold mb-1">Endpunkte</div><div class="h-240"><canvas id="sdScores"></canvas></div></div>
+        <div class="glass p-3"><div class="font-bold mb-1">Rundensiege</div><div class="h-240"><canvas id="sdCorrect"></canvas></div></div>
+        <div class="glass p-3"><div class="font-bold mb-1">Extrema</div><div class="h-240"><canvas id="sdExtremes"></canvas></div></div>
       </div>
     </div>
   </div>
 
-  <!-- Spielbereich -->
-  <div id="game" class="hidden h-full w-full mt-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-      <!-- Eingabe (linke Seite) -->
-      <div class="glass rounded-3xl shadow-xl p-6 flex flex-col justify-between h-full min-h-[350px]">
-        <div id="roundInput" class="text-2xl font-semibold text-center mb-6"></div>
-        <div class="grid grid-cols-3 gap-3 text-2xl w-full max-w-md mx-auto mb-2">
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(1)">1</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(2)">2</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(3)">3</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(4)">4</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(5)">5</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(6)">6</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(7)">7</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(8)">8</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(9)">9</button>
-          <button class="py-5 bg-red-200 hover:bg-red-300 text-red-800 transition rounded-xl font-black" onclick="deleteNumber()">⌫</button>
-          <button class="py-5 bg-blue-50 hover:bg-blue-200 transition rounded-xl font-black" onclick="appendNumber(0)">0</button>
-          <button class="py-5 bg-green-500 hover:bg-green-600 text-white font-black transition rounded-xl" onclick="confirmNumber()">OK</button>
-        </div>
-      </div>
-      <!-- Übersicht (rechte Seite) -->
-      <div class="glass rounded-3xl shadow-xl p-6 overflow-y-auto flex flex-col min-h-[350px]">
-        <div id="scoreboard" class="space-y-3 mb-4 text-xl font-semibold"></div>
-        <div id="roundHistory" class="mb-4 text-lg"></div>
-        <button onclick="endGame()" class="apple-btn w-full py-3 text-white text-lg shadow mt-auto">Spiel beenden & Statistik anzeigen</button>
-      </div>
-    </div>
-  </div>
+  <!-- Center Toast -->
+  <div id="toast"><div class="glass bubble"></div></div>
 
-  <!-- Statistik -->
-  <div id="statistics" class="hidden max-w-4xl mx-auto glass rounded-3xl shadow-xl p-8 mt-8 w-full">
-    <h1 class="text-2xl font-bold text-center mb-6 text-blue-700">Spielstatistik</h1>
-    <div id="finalScores" class="space-y-4 text-lg"></div>
-    <button onclick="location.reload()" class="apple-btn mt-8 w-full py-3 text-white text-lg shadow">Neues Spiel starten</button>
-  </div>
+  <script>
+    const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+    const saveKey = 'rummikub.touch.v1';
+    const savesKey = 'rummikub.touch.v1.saves'; // (Legacy) – wird migriert
+    const settingsKey='rummikub.touch.v1.settings';
+    const fmt = n => (n>=0? '+'+n : n);
 
-<script>
-let players = [];
-let scores = [];
-let currentInputIndex = 0;
-let tempRound = [];
-let inputBuffer = '';
-let roundNumber = 1;
+    // NEU: globaler Container + Schema
+    const GAME_ID = 'rummikub';
+    const SAVE_SCHEMA = 1;
+    const GLOBAL_SAVES_KEY = 'pascal.spiele.saves.v1';
 
-// Rechtlicher Hinweis Modal Handling
-function closeLegalModal() {
-  document.getElementById('legalModal').style.display = 'none';
-}
-window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('legalModal').style.display = '';
-});
+    const S = {
+      players:[], round:1, step:'hands', stepIndex:0,
+      hands:[], points:[], totals:{}, winners:[],
+      targetMode:'points', targetPoints:200, totalRounds:10,
+      scoring:'classic', jokerValue:30,
+      history:[], savedFinal:false
+    };
+    const Settings = { theme:'light', sidebar:'expanded' };
 
-// Spieler hinzufügen
-function addNextPlayerInput(input) {
-  const container = document.getElementById('playerInputs');
-  if (input.nextElementSibling === null && input.value.trim() !== '') {
-    const next = document.createElement('input');
-    next.type = 'text';
-    next.placeholder = `Spieler ${container.children.length + 1}`;
-    next.className = 'w-full px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 focus:outline-blue-400 transition';
-    next.oninput = () => addNextPlayerInput(next);
-    container.appendChild(next);
-  }
-}
+    /* ---------- Storage (robust) ---------- */
+    const safeLS = {
+      get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+      set(k,v){ try { localStorage.setItem(k,v); } catch {} },
+      remove(k){ try { localStorage.removeItem(k); } catch {} }
+    };
 
-// Spielstart
-function startGame() {
-  players = [...document.querySelectorAll('#playerInputs input')]
-    .map(input => input.value.trim())
-    .filter(name => name !== '');
-  if (players.length < 2) {
-    alert("Bitte mindestens zwei Spieler eingeben.");
-    return;
-  }
-  scores = players.map(() => []);
-  document.getElementById('welcome').classList.add('hidden');
-  document.getElementById('game').classList.remove('hidden');
-  roundNumber = 1;
-  currentInputIndex = 0;
-  tempRound = [];
-  inputBuffer = '';
-  updateRoundInput();
-  updateScoreboard();
-  updateHistory();
-}
+    const Storage = {
+      save(){ safeLS.set(saveKey, JSON.stringify(S)); },
+      load(){
+        const d = safeLS.get(saveKey);
+        if(!d) return false;
+        try { Object.assign(S, JSON.parse(d)); return true; }
+        catch { return false; }
+      },
+      clear(){ safeLS.remove(saveKey); },
+      saveSettings(){ safeLS.set(settingsKey, JSON.stringify(Settings)); },
+      loadSettings(){
+        const d = safeLS.get(settingsKey);
+        if(d){ try { Object.assign(Settings, JSON.parse(d)); } catch {} }
+      }
+    };
 
-// Eingabefeld
-function updateRoundInput() {
-  document.getElementById('roundInput').innerHTML = `
-    <div class="mb-2">Runde <strong>${roundNumber}</strong></div>
-    <div class="mb-2">Übrige Punkte für<br><span class="font-black text-blue-600">${players[currentInputIndex]}</span>:</div>
-    <span id='currentBuffer' class='text-4xl text-blue-700 font-mono select-all'>${inputBuffer === '' ? 0 : inputBuffer}</span>`;
-}
+    /* ---------- Save-Erkennung/Normalisierung (NEU) ---------- */
+    function looksLikeRummikubSave(e){
+      // gültig, wenn explizit rummikub oder typische Rummikub-Felder vorhanden
+      return !!e && (
+        e.gameId === GAME_ID ||
+        (Array.isArray(e.players) && Array.isArray(e.hands) && Array.isArray(e.points) &&
+         e.totals && typeof e.totals === 'object' &&
+         !('predictions' in e) && !('results' in e))
+      );
+    }
+    function normalizeSave(e){
+      if(!e) return null;
+      if(e.gameId && e.gameId !== GAME_ID) return null;
+      if(!looksLikeRummikubSave(e)) return null;
+      return { ...e, gameId: GAME_ID, schema: (e.schema ?? SAVE_SCHEMA) };
+    }
 
-// Zahleneingabe
-function appendNumber(num) {
-  if (inputBuffer.length > 3) return;
-  if (inputBuffer === '0') inputBuffer = '';
-  inputBuffer += num;
-  document.getElementById('currentBuffer').innerText = inputBuffer === '' ? 0 : inputBuffer;
-}
+    /* ---------- Saves (global, nur Rummikub gefiltert) ---------- */
+    const Saves = {
+      all(){
+        const rawGlobal = safeLS.get(GLOBAL_SAVES_KEY);
+        const globalArr = rawGlobal ? JSON.parse(rawGlobal) : [];
 
-// Löschen
-function deleteNumber() {
-  inputBuffer = inputBuffer.slice(0, -1);
-  document.getElementById('currentBuffer').innerText = inputBuffer === '' ? 0 : inputBuffer;
-}
+        // Aus dem globalen Container nur Rummikub-Einträge ziehen/normalisieren
+        let rummi = globalArr.map(normalizeSave).filter(Boolean);
 
-// Eingabe bestätigen
-function confirmNumber() {
-  // 0 ist gültig!
-  let value = (inputBuffer === '' ? 0 : parseInt(inputBuffer, 10));
-  if (!Number.isFinite(value) || value < 0) {
-    alert("Bitte gültige Punktzahl eingeben.");
-    inputBuffer = '';
-    updateRoundInput();
-    return;
-  }
-  tempRound.push(value);
-  inputBuffer = '';
-  currentInputIndex++;
-  if (currentInputIndex < players.length) {
-    updateRoundInput();
-  } else {
-    players.forEach((_, i) => scores[i].push(tempRound[i]));
-    roundNumber++;
-    currentInputIndex = 0;
-    tempRound = [];
-    updateScoreboard();
-    updateHistory();
-    updateRoundInput();
-  }
-}
+        // MIGRATION: alte lokale Liste -> in globalen Container überführen
+        const legacyRaw = safeLS.get(savesKey);
+        if (legacyRaw) {
+          let legacy = [];
+          try { legacy = JSON.parse(legacyRaw); } catch {}
+          const legacyNorm = (Array.isArray(legacy) ? legacy : [])
+            .map(x => normalizeSave({ ...x, gameId: GAME_ID, schema: SAVE_SCHEMA }))
+            .filter(Boolean);
 
-// Scoreboard Anzeige
-function updateScoreboard() {
-  const scoreboard = document.getElementById('scoreboard');
-  scoreboard.innerHTML = '';
-  players.forEach((player, i) => {
-    const totalScore = scores[i].reduce((a,b) => a+b,0);
-    scoreboard.innerHTML += `
-      <div class="flex items-center justify-between">
-        <span>${player}:</span>
-        <span class="text-2xl text-blue-800 font-black">${totalScore} Punkte</span>
-      </div>`;
-  });
-}
+          if (legacyNorm.length) {
+            // alles Nicht-Rummikub im globalen Container bewahren (auch ohne gameId)
+            const others = globalArr.filter(x => !looksLikeRummikubSave(x));
+            // zusammenführen + deduplizieren nach id/ts
+            const seen = new Set();
+            const mergedRummi = [...legacyNorm, ...rummi].filter(x => {
+              const k = x.id || (x.ts ? 'ts_'+x.ts : JSON.stringify(x.players||[]));
+              if (seen.has(k)) return false;
+              seen.add(k); return true;
+            });
+            safeLS.set(GLOBAL_SAVES_KEY, JSON.stringify([...mergedRummi, ...others]));
+            safeLS.remove(savesKey); // Legacy-Key leeren
+            rummi = mergedRummi;
+          }
+        }
+        return rummi;
+      },
 
-// Rundenverlauf
-function updateHistory() {
-  const roundHistory = document.getElementById('roundHistory');
-  roundHistory.innerHTML = '<h2 class="text-xl font-semibold mb-2 text-blue-700">Rundenverlauf</h2>';
-  if (scores[0].length === 0) return;
-  for (let r = 0; r < scores[0].length; r++) {
-    const roundId = `runde-${r}`;
-    const line = document.createElement('div');
-    line.id = roundId;
-    line.className = 'mb-1 flex justify-between items-center';
-    line.innerHTML = `<div><strong>Runde ${r + 1}:</strong> ` + players.map((p, i) => `${p}: <span class="font-semibold text-blue-700">${scores[i][r]}</span>`).join(' | ') + '</div>';
+      writeRummikubList(list){
+        const raw = safeLS.get(GLOBAL_SAVES_KEY);
+        const all = raw ? JSON.parse(raw) : [];
+        // bewahre alles, was NICHT nach Rummikub aussieht
+        const others = all.filter(x => !looksLikeRummikubSave(x));
+        safeLS.set(GLOBAL_SAVES_KEY, JSON.stringify([...list, ...others]));
+      },
 
-    const delBtn = document.createElement('button');
-    delBtn.innerText = '❌';
-    delBtn.className = 'ml-4 text-red-500 text-xl';
-    delBtn.onclick = () => deleteRound(r);
-    line.appendChild(delBtn);
+      add(e){
+        const entry = normalizeSave({ ...e, gameId: GAME_ID, schema: SAVE_SCHEMA });
+        const a = this.all();
+        a.unshift(entry);
+        this.writeRummikubList(a);
+        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+      },
 
-    roundHistory.appendChild(line);
-  }
-}
+      remove(id){
+        const a = this.all().filter(x => x.id !== id);
+        this.writeRummikubList(a);
+        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+      },
 
-// Runde löschen
-function deleteRound(index) {
-  players.forEach((_, i) => scores[i].splice(index, 1));
-  roundNumber = scores[0].length + 1;
-  updateScoreboard();
-  updateHistory();
-  updateRoundInput();
-}
+      exportJSON(){
+        const blob = new Blob([JSON.stringify(this.all(),null,2)],{type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'rummikub_saves.json'; a.click();
+        URL.revokeObjectURL(url);
+      },
 
-// Spielende
-function endGame() {
-  document.getElementById('game').classList.add('hidden');
-  document.getElementById('statistics').classList.remove('hidden');
+      importJSON(){
+        const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json';
+        inp.onchange=()=>{ const f=inp.files[0]; if(!f) return; const r=new FileReader();
+          r.onload=()=>{ try{
+              const incoming = JSON.parse(r.result);
+              const valid = (Array.isArray(incoming)? incoming:[]).map(normalizeSave).filter(Boolean);
+              const merged = [...valid, ...this.all()];
+              const seen = new Set();
+              const deduped = merged.filter(x=>{
+                const k = x.id || (x.ts ? 'ts_'+x.ts : JSON.stringify(x.players||[]));
+                if(seen.has(k)) return false; seen.add(k); return true;
+              });
+              this.writeRummikubList(deduped);
+              UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+              alert(`Import: ${valid.length} gültige Rummikub-Spielstände übernommen.`);
+            } catch { alert('Ungültige Datei.'); } };
+          r.readAsText(f);
+        };
+        inp.click();
+      },
 
-  const finalScores = players.map((player, i) => {
-    const total = scores[i].reduce((a, b) => a + b, 0);
-    const avg = (scores[i].length > 0 ? (total / scores[i].length).toFixed(2) : '—');
-    return { name: player, total, avg };
-  }).sort((a, b) => a.total - b.total);
+      saveFinished(silent=false){
+        const entry={ id:'g_'+Date.now(), ts:new Date().toISOString(),
+          gameId: GAME_ID, schema: SAVE_SCHEMA,
+          players:[...S.players],
+          targetMode:S.targetMode, targetPoints:S.targetPoints, totalRounds:S.totalRounds,
+          scoring:S.scoring, jokerValue:S.jokerValue,
+          totals:{...S.totals}, winners:[...S.winners],
+          hands:S.hands, points:S.points, summary:Analytics.computeSummary()
+        };
+        const a=this.all(); a.unshift(entry); this.writeRummikubList(a);
+        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+        if(!silent) alert('Spielstand gespeichert.');
+      }
+    };
 
-  const finalContainer = document.getElementById('finalScores');
-  finalContainer.innerHTML = '';
-  finalScores.forEach((entry, idx) => {
-    finalContainer.innerHTML += `
-      <div class="flex flex-col border p-4 rounded-lg ${idx === 0 ? 'bg-green-50' : 'bg-blue-50'}">
-        <div class="flex justify-between">
-          <span class="font-bold text-xl">${entry.name}</span>
-          <span class="text-xl text-blue-800 font-black">${entry.total} Punkte</span>
-        </div>
-        <div class="text-sm text-blue-700">Ø ${entry.avg} pro Runde ${idx === 0 ? '<span class="text-green-600 font-semibold">🏆 Gewinner</span>' : ''}</div>
-      </div>`;
-  });
-}
-</script>
+    /* ---------- Scoring ---------- */
+    function recalcTotals(){
+      S.players.forEach(p=>S.totals[p]=0);
+      for(let i=0;i<S.points.length;i++){
+        const P=S.points[i]||{};
+        if(Object.keys(P).length<S.players.length) continue;
+        S.players.forEach(pl=>{ S.totals[pl]+= (P[pl] ?? 0); });
+      }
+    }
+
+    function scoreRound(handsObj){
+      const zeros = S.players.filter(p => (handsObj[p]|0)===0);
+      if(zeros.length!==1) return {error:'Genau ein Spieler muss 0 haben (Gewinner).'};
+      const winner = zeros[0];
+      let sumOthers = 0;
+      S.players.forEach(p=>{ sumOthers += (handsObj[p]|0); });
+      const pts = {};
+      if(S.scoring==='classic'){
+        S.players.forEach(p=>{
+          pts[p] = (p===winner)? sumOthers : -(handsObj[p]|0);
+        });
+      }else{ // negOnly
+        S.players.forEach(p=>{
+          pts[p] = (p===winner)? 0 : -(handsObj[p]|0);
+        });
+      }
+      return {winner, pts};
+    }
+
+    /* ---------- Analytics helpers ---------- */
+    const Analytics = {
+      perRoundTotalsGeneric(players, points){
+        const totals=players.map(()=>[]), acc=players.map(()=>0);
+        for(let i=0;i<points.length;i++){
+          const P=points[i]||{};
+          const full=(Object.keys(P).length===players.length);
+          players.forEach((pl,pi)=>{ if(full){ acc[pi]+= (P[pl]??0);} totals[pi].push(acc[pi]); });
+        }
+        return totals;
+      },
+      perRoundTotals(){ return this.perRoundTotalsGeneric(S.players,S.points); },
+      roundWinsGeneric(players, hands){
+        const wins=Object.fromEntries(players.map(p=>[p,0]));
+        for(let i=0;i<hands.length;i++){
+          const H=hands[i]||{};
+          if(Object.keys(H).length<players.length) continue;
+          const zero = players.find(p=> (H[p]|0)===0);
+          if(zero) wins[zero]++;
+        }
+        return wins;
+      },
+      roundWins(){ return this.roundWinsGeneric(S.players,S.hands); },
+      extremesGeneric(points){
+        const maxPos=Object.fromEntries(S.players.map(p=>[p,0]));
+        const maxNeg=Object.fromEntries(S.players.map(p=>[p,0]));
+        for(let i=0;i<points.length;i++){
+          const P=points[i]||{};
+          S.players.forEach(pl=>{
+            const v=P[pl];
+            if(v==null) return;
+            if(v>maxPos[pl]) maxPos[pl]=v;
+            if(v<maxNeg[pl]) maxNeg[pl]=v;
+          });
+        }
+        return {maxPos,maxNeg};
+      },
+      extremes(){ return this.extremesGeneric(S.points); },
+      avgHandGeneric(players,hands){
+        const sum=Object.fromEntries(players.map(p=>[p,0]));
+        const cnt=Object.fromEntries(players.map(p=>[p,0]));
+        for(let i=0;i<hands.length;i++){
+          const H=hands[i]||{};
+          players.forEach(p=>{
+            const v=H[p]; if(v==null) return;
+            sum[p]+=v; cnt[p]+=1;
+          });
+        }
+        return Object.fromEntries(players.map(p=>[p, cnt[p]? Math.round((sum[p]/cnt[p])*10)/10 : 0 ]));
+      },
+      avgHand(){ return this.avgHandGeneric(S.players,S.hands); },
+      computeSummary(){
+        let best=-Infinity,bestPlayers=[];
+        S.players.forEach(p=>{ if(S.totals[p]>best){best=S.totals[p]; bestPlayers=[p];} else if(S.totals[p]===best){bestPlayers.push(p);} });
+        return {
+          bestPlayers, bestScore:best,
+          wins:this.roundWins(), extremes:this.extremes(), avgHand:this.avgHand()
+        };
+      }
+    };
+
+    function ensureSummaryFromEntry(e){
+      if(e.summary) return e.summary;
+      const players=e.players||[];
+      const points=e.points||[];
+      const hands=e.hands||[];
+      const totals=Object.fromEntries(players.map(p=>[p,0]));
+      for(let i=0;i<points.length;i++){
+        const P=points[i]||{};
+        if(Object.keys(P).length===players.length) players.forEach(p=> totals[p]+= (P[p]||0));
+      }
+      let best=-Infinity,bestPlayers=[];
+      players.forEach(p=>{ if(totals[p]>best){best=totals[p]; bestPlayers=[p];} else if(totals[p]===best){bestPlayers.push(p);} });
+
+      // wins
+      const wins=Object.fromEntries(players.map(p=>[p,0]));
+      for(let i=0;i<hands.length;i++){
+        const H=hands[i]||{};
+        const zero=players.find(p=> (H[p]|0)===0);
+        if(zero) wins[zero]++;
+      }
+      // extremes + avg hand
+      const maxPos=Object.fromEntries(players.map(p=>[p,0]));
+      const maxNeg=Object.fromEntries(players.map(p=>[p,0]));
+      for(let i=0;i<points.length;i++){
+        const P=points[i]||{};
+        players.forEach(p=>{
+          const v=P[p];
+          if(v==null) return;
+          if(v>maxPos[p]) maxPos[p]=v;
+          if(v<maxNeg[p]) maxNeg[p]=v;
+        });
+      }
+      const sum=Object.fromEntries(players.map(p=>[p,0]));
+      const cnt=Object.fromEntries(players.map(p=>[p,0]));
+      for(let i=0;i<hands.length;i++){
+        const H=hands[i]||{};
+        players.forEach(p=>{ const v=H[p]; if(v!=null){ sum[p]+=v; cnt[p]++; }});
+      }
+      const avgHand=Object.fromEntries(players.map(p=>[p, cnt[p]? Math.round((sum[p]/cnt[p])*10)/10 : 0 ]));
+
+      return { bestPlayers, bestScore:best, wins, extremes:{maxPos,maxNeg}, avgHand };
+    }
+
+    function globalAggregates(){
+      const arr = Saves.all(); // nur Rummikub
+      const gameWins = {}, games = {}, sumScore = {}, bestScore = {}, sumAvgHand = {}, avgHandCnt = {};
+      const maxPos = {}, maxNegAbs = {};
+      const inc=(m,k,v=1)=>{ m[k]=(m[k]||0)+v; };
+      const setMax=(m,k,v)=>{ m[k]=Math.max(m[k]||0, v||0); };
+
+      arr.forEach(e=>{
+        const players=e.players||[], totals=e.totals||{};
+        const sum=ensureSummaryFromEntry(e);
+        (sum.bestPlayers||[]).forEach(p=> inc(gameWins,p,1));
+        players.forEach(p=>{
+          inc(games,p,1);
+          inc(sumScore,p, totals[p]||0);
+          setMax(bestScore,p, totals[p]||0);
+          const ah = (sum.avgHand && typeof sum.avgHand[p]==='number') ? sum.avgHand[p] : 0;
+          inc(sumAvgHand,p, ah); inc(avgHandCnt,p, ah?1:0);
+          setMax(maxPos,p, (sum.extremes?.maxPos?.[p]||0));
+          setMax(maxNegAbs,p, Math.abs(sum.extremes?.maxNeg?.[p]||0));
+        });
+      });
+
+      const players = Object.keys(games).sort((a,b)=>(gameWins[b]||0)-(gameWins[a]||0));
+      const avgScore = players.map(p=> games[p]? Math.round((sumScore[p]/games[p])*10)/10 : 0);
+      const best = players.map(p=> bestScore[p]||0);
+      const winVals = players.map(p=> gameWins[p]||0);
+      const avgHand = players.map(p=> (avgHandCnt[p]? Math.round(sumAvgHand[p]/avgHandCnt[p]) : 0));
+      const maxP = players.map(p=> maxPos[p]||0);
+      const maxN = players.map(p=> maxNegAbs[p]||0);
+
+      return {players, winVals, avgScore, best, avgHand, maxP, maxN, totalGames: arr.length};
+    }
+
+    /* ---------- UI ---------- */
+    let chartPoints, chartCorrect, chartExtremes, chartAccuracy;
+    let gaWins, gaAvg, gaBest, gaAcc, gaExt;
+    let sdC1, sdC2, sdC3, sdC4;
+    let endCharts=[];
+
+    function showView(v){
+      ['setup','game','analytics','history','rules','settings'].forEach(x=>$('#view-'+x)?.classList.toggle('hidden', v!==x));
+      if(v==='analytics'){ UI.updateCharts(); UI.updateGlobalCharts(); }
+      if(v==='history'){ UI.renderSaves(); }
+      if(v==='setup'){ UI.renderSavesHome(); }
+    }
+
+    const UI = {
+      init(){
+        $('#year').textContent=new Date().getFullYear();
+
+        // Global nav
+        $$('[data-nav]').forEach(btn=> btn.addEventListener('click', ()=>{
+          showView(btn.dataset.nav);
+          if(window.innerWidth<=900){ $('#sidebar').classList.remove('open'); }
+          if(btn.dataset.nav==='analytics'){ $('#btnAnaGlobal').click(); }
+        }));
+
+        // Sidebar collapse
+        $('#btnCollapse').onclick = ()=>{
+          const sb = $('#sidebar'), ct = $('#content');
+          if(window.innerWidth<=900){ sb.classList.toggle('open'); return; }
+          sb.classList.toggle('collapsed'); ct.classList.toggle('shifted');
+          Settings.sidebar = sb.classList.contains('collapsed') ? 'collapsed' : 'expanded';
+          Storage.saveSettings();
+        };
+
+        // Settings load
+        Storage.loadSettings();
+        document.documentElement.setAttribute('data-theme', Settings.theme||'light');
+        if(Settings.sidebar==='collapsed'){ $('#sidebar').classList.add('collapsed'); $('#content').classList.add('shifted'); }
+        const t = $('#toggleDark'); if(t) t.checked = (Settings.theme==='dark');
+        $('#toggleDark')?.addEventListener('change',(e)=>{ Settings.theme=e.target.checked?'dark':'light'; document.documentElement.setAttribute('data-theme', Settings.theme); Storage.saveSettings(); });
+
+        // Actions
+        $('#btnStart').onclick=Handlers.start;
+        $('#btnLoad').onclick=Handlers.load;
+        $('#btnReset').onclick=Handlers.reset;
+        $('#btnEnd').onclick=Handlers.end;
+        $('#btnRedoRound').onclick=Handlers.redoRound;
+        $('#btnOpenSaves').onclick=()=>{ showView('history'); };
+        $('#btnHome').onclick=()=>{ location.href='https://pascalasch.github.io/Spiele/Overview.html'; };
+        $('#btnSdClose').onclick = ()=> UI.closeSaveDetail();
+        $('#saveDetail').addEventListener('click', (e)=>{ if(e.target.id==='saveDetail') UI.closeSaveDetail(); });
+
+        // Segmented controls
+        $('#segScore').addEventListener('click', e=>{
+          if(e.target.tagName!=='BUTTON') return;
+          $$('#segScore button').forEach(b=>b.classList.remove('active'));
+          e.target.classList.add('active'); S.scoring = e.target.dataset.val; Storage.save();
+        });
+        $('#segTarget').addEventListener('click', e=>{
+          if(e.target.tagName!=='BUTTON') return;
+          $$('#segTarget button').forEach(b=>b.classList.remove('active'));
+          e.target.classList.add('active'); S.targetMode = e.target.dataset.val;
+          $('#targetPointsWrap').classList.toggle('hidden', S.targetMode!=='points');
+          $('#targetRoundsWrap').classList.toggle('hidden', S.targetMode!=='rounds');
+          UI.top(); Storage.save();
+        });
+
+        if(safeLS.get(saveKey)) $('#btnLoad').classList.remove('hidden');
+
+        document.addEventListener('touchstart',()=>{}, {passive:true});
+
+        UI.renderSavesHome();
+        $('#btnAnaGlobal').click();
+
+        // Parallax movement
+        const layers=$$('.plx');
+        function moveParallax(x,y){
+          const dx=(x/window.innerWidth-0.5), dy=(y/window.innerHeight-0.5);
+          layers.forEach((el,i)=>{ const f=(i+1)*8; el.style.transform=`translate(${dx*f}px, ${dy*f}px) scale(1.05)`; });
+        }
+        window.addEventListener('mousemove',e=>moveParallax(e.clientX,e.clientY),{passive:true});
+        window.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(t) moveParallax(t.clientX,t.clientY); },{passive:true});
+      },
+
+      addNext(el){
+        const c=$('#playerInputs');
+        if(!el.nextElementSibling && el.value.trim()!==''){
+          const n=document.createElement('input');
+          n.className='input w-full px-4 py-4 rounded-xl';
+          n.type='text'; n.placeholder=`Spieler ${c.children.length+1}`;
+          n.oninput=()=>UI.addNext(n);
+          c.appendChild(n);
+        }
+      },
+
+      toast(msg){
+        const t=$('#toast'); const b=t.querySelector('.bubble');
+        b.textContent=msg; t.style.display='block'; b.style.background='var(--glass-bg)'; b.style.color='var(--text)';
+        setTimeout(()=>{ t.style.display='none'; }, 2600);
+      },
+
+      top(){
+        const total = (S.targetMode==='rounds') ? S.totalRounds : '—';
+        $('#roundProgress').textContent=`${S.round}/${total}`;
+        $('#targetLine').innerHTML = (S.targetMode==='points') ? `🎯 Ziel: <b>${S.targetPoints}</b> Punkte` : `🎯 Runden: <b>${S.totalRounds}</b>`;
+        $('#lastWinnerLine').innerHTML = `🏁 Letzter Gewinner: <b>${S.winners[S.winners.length-1]??'–'}</b>`;
+        $('#phaseTitle').textContent='Hand-Summen';
+        $('#phaseHint').innerHTML=`Gewinner = 0 · Joker zählt <span id="jokerHint">${S.jokerValue}</span>`;
+        const current=S.players[(S.stepIndex)%S.players.length]||'–';
+        $('#whoPrompt').innerHTML=`Hand-Summe für <b>${current}</b>?`;
+        $('#remainInfo').textContent='';
+        $('#inputError').textContent='';
+      },
+
+      tables(){
+        const hdr1=$('#hdr1'), hdr2=$('#hdr2'), body=$('#tbody');
+        hdr1.innerHTML=`<th>Runde</th>${S.players.map(p=>`<th>${p}</th>`).join('')}<th></th>`;
+        hdr2.innerHTML=`<th>Gesamt</th>${S.players.map(p=>`<th>${S.totals[p]||0}</th>`).join('')}<th></th>`;
+        body.innerHTML='';
+        for(let i=S.hands.length-1;i>=0;i--){
+          const H=S.hands[i]||{}, P=S.points[i]||{};
+          const fullHands = Object.keys(H).length===S.players.length;
+          const fullPoints= Object.keys(P).length===S.players.length;
+
+          if(fullHands){
+            const winner = S.players.find(p=> (H[p]|0)===0);
+            const tr=document.createElement('tr'); tr.className='row-tip';
+            tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Hand)</td>`+
+              S.players.map(pl=>{
+                const v=H[pl]; const mark=(v===0)?' 🏁':'';
+                return `<td>${(v!=null)? `<b>${v}</b>${mark}` : '-'}</td>`;
+              }).join('') +
+              `<td>${(!fullPoints)? `<button class='underline text-red-500' onclick='Handlers.delHands(${i})'>Eingabe löschen</button>`:''}</td>`;
+            body.appendChild(tr);
+          }
+          if(fullPoints){
+            const tr2=document.createElement('tr'); tr2.className='row-res';
+            tr2.innerHTML=`<td class='font-bold'>Runde ${i+1} (Punkte)</td>`+
+              S.players.map(pl=>`<td>${P[pl]>0? `<b>${P[pl]}</b>`: P[pl]}<br><span class='text-xs' style='color:var(--accent)'>${fmt(P[pl])}</span></td>`).join('')+
+              `<td><button class='underline text-red-500' onclick='Handlers.delRound(${i})'>Runde löschen</button></td>`;
+            body.appendChild(tr2);
+          }
+        }
+      },
+
+      final(){
+        const totals=S.totals;
+        let max=-Infinity,w=[];
+        S.players.forEach(p=>{ if(totals[p]>max){max=totals[p];w=[p]} else if(totals[p]===max){w.push(p)} });
+        $('#finalResult').innerHTML=(w.length===1)? `🏅 <b>${w[0]}</b> gewinnt mit <b>${max}</b> Punkten.` : `🏅 <b>${w.join(' & ')}</b> teilen sich den Sieg (je <b>${max}</b> Punkte).`;
+
+        const roundsPlayed = S.points.filter(P=>Object.keys(P||{}).length===S.players.length).length;
+
+        const wins=Analytics.roundWins();
+        const ex=Analytics.extremes();
+        const avgH=Analytics.avgHand();
+
+        const bestPos=Math.max(...S.players.map(p=>ex.maxPos[p]||0));
+        const worstNeg=Math.min(...S.players.map(p=>ex.maxNeg[p]||0));
+
+        const lis=[
+          `1. Gespielte Runden: ${roundsPlayed}`,
+          `2. Rundensiege: ${S.players.map(p=>`${p}: ${wins[p]||0}`).join(' | ')}`,
+          `3. Höchste Plus-Runde: ${bestPos}`,
+          `4. Größte Minusrunde: ${worstNeg}`,
+          `5. Ø Hand-Summe: ${S.players.map(p=>`${p}: ${avgH[p]}`).join(' | ')}`
+        ];
+        $('#extraStats').innerHTML=`<ul class='list-disc ml-5'>${lis.map(s=>`<li>${s}</li>`).join('')}</ul>`;
+
+        const h=$('#finalHdr'), b=$('#finalBody'); h.innerHTML=`<th>Runde</th>${S.players.map(p=>`<th>${p}</th>`).join('')}`; b.innerHTML='';
+        for(let i=0;i<S.hands.length;i++){
+          const H=S.hands[i]||{}, P=S.points[i]||{};
+          if(Object.keys(H).length){ const tr=document.createElement('tr'); tr.className='row-tip'; tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Hand)</td>`+S.players.map(p=>`<td><b>${H[p]??'-'}</b>${(H[p]===0)?' 🏁':''}</td>`).join(''); b.appendChild(tr); }
+          if(Object.keys(P).length===S.players.length){ const tr=document.createElement('tr'); tr.className='row-res'; tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Punkte)</td>`+S.players.map(pl=>`<td>${P[pl]}<br><span class='text-xs' style='color:var(--accent)'>${fmt(P[pl])}</span></td>`).join(''); b.appendChild(tr); }
+        }
+      },
+
+      updateEndCharts(){
+        endCharts.forEach(c=>c&&c.destroy()); endCharts=[];
+        const labels=S.points.map((_,i)=>`R${i+1}`);
+        const totals=Analytics.perRoundTotals();
+        const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
+
+        const wins=Analytics.roundWins();
+        const ex=Analytics.extremes();
+
+        endCharts.push(new Chart($('#endC1'),{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }}));
+        endCharts.push(new Chart($('#endC2'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Punkte', data:S.players.map(p=>S.totals[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
+        endCharts.push(new Chart($('#endC3'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Rundensiege', data:S.players.map(p=>wins[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
+        endCharts.push(new Chart($('#endC4'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Höchste Runde', data:S.players.map(p=>ex.maxPos[p])},{label:'Größte Minusrunde', data:S.players.map(p=>ex.maxNeg[p])}]}, options:{responsive:true, maintainAspectRatio:false}}));
+      },
+
+      csv(){
+        const rows=[['Round',...S.players.map(p=>`${p} (Hand)`),...S.players.map(p=>`${p} (Punkte)`)].join(',')];
+        for(let i=0;i<S.hands.length;i++){
+          const H=S.hands[i]||{}, P=S.points[i]||{};
+          rows.push([i+1, ...S.players.map(p=>H[p]??''), ...S.players.map(p=>P[p]??'')].join(','));
+        }
+        const blob=new Blob([rows.join('\n')],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download='rummikub_scores.csv'; a.click(); URL.revokeObjectURL(url);
+      },
+
+      renderSaves(){
+        const box=$('#savesList'); const arr=Saves.all();
+        if(!arr.length){ box.innerHTML='<div class="glass p-4 opacity-70">Keine gespeicherten Spiele.</div>'; return; }
+        box.innerHTML=arr.map(e=>{
+          const date=new Date(e.ts).toLocaleString();
+          const rank=Object.entries(e.totals||{}).sort((a,b)=>b[1]-a[1]);
+          const winner=rank.filter(x=>x[1]===rank[0][1]).map(x=>x[0]).join(' & ');
+          const goal=(e.targetMode==='points')? `${e.targetPoints} Punkte` : `${e.totalRounds} Runden`;
+          return `<div class='glass p-4 flex flex-col gap-2'>
+            <div class='text-sm' style='color:var(--muted)'>${date} · ${e.players.length} Spieler · Ziel: ${goal} · Modus: ${e.scoring}</div>
+            <div><b>Winner:</b> ${winner} (${rank[0][1]} Pkt)</div>
+            <div class='text-sm'>${e.players.map(p=>`${p}: ${e.totals[p]??0}`).join(' · ')}</div>
+            <div class='flex gap-2 mt-1'>
+              <button class='btn btn-muted' onclick='UI.openSaveDetail("${e.id}")'>🔎 Details</button>
+              <button class='btn btn-danger' onclick='Saves.remove("${e.id}")'>🗑️ Löschen</button>
+            </div>
+          </div>`;
+        }).join('');
+      },
+
+      renderSavesHome(){
+        const box=$('#savesListHome'); if(!box) return;
+        const arr=Saves.all().slice(0,4);
+        if(!arr.length){ box.innerHTML='<div class="opacity-70">Noch keine Spielstände.</div>'; return; }
+        box.innerHTML=arr.map(e=>{
+          const date=new Date(e.ts).toLocaleDateString();
+          const rank=Object.entries(e.totals||{}).sort((a,b)=>b[1]-a[1]);
+          return `<div class='glass p-3'>${date}: <b>${rank[0][0]}</b> (${rank[0][1]} Pkt) – ${e.players.length} Spieler</div>`;
+        }).join('');
+      },
+
+      openSaveDetail(id){
+        const e=Saves.all().find(x=>x.id===id); if(!e) return;
+        $('#sdTitle').textContent = 'Spiel-Details';
+        const goal=(e.targetMode==='points')? `${e.targetPoints} Punkte` : `${e.totalRounds} Runden`;
+        $('#sdMeta').textContent = new Date(e.ts).toLocaleString() + ` · ${e.players.length} Spieler · Ziel: ${goal} · Modus: ${e.scoring}`;
+
+        [sdC1,sdC2,sdC3,sdC4].forEach(c=>c&&c.destroy());
+
+        const labels=(e.points||[]).map((_,i)=>`R${i+1}`);
+        // per-round totals für diesen Save
+        const totals=(()=>{
+          const acc= e.players.map(()=>0);
+          const arr=e.points||[];
+          const out=e.players.map(()=>[]);
+          for(let i=0;i<arr.length;i++){
+            const P=arr[i]||{};
+            if(Object.keys(P).length===e.players.length){
+              e.players.forEach((pl,pi)=>{ acc[pi]+= (P[pl]??0); });
+            }
+            e.players.forEach((_,pi)=> out[pi].push(acc[pi]) );
+          }
+          return out;
+        })();
+        const ds=totals.map((arr,i)=>({ label:e.players[i], data:arr, tension:.25 }));
+
+        sdC1=new Chart($('#sdPoints'),{ type:'line', data:{labels, datasets:ds},
+          options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }});
+
+        const scorePairs=Object.entries(e.totals||{}).sort((a,b)=>b[1]-a[1]);
+        sdC2=new Chart($('#sdScores'),{ type:'bar', data:{labels:scorePairs.map(x=>x[0]), datasets:[{label:'Punkte', data:scorePairs.map(x=>x[1])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
+
+        const wins=(()=>{
+          const m=Object.fromEntries(e.players.map(p=>[p,0]));
+          (e.hands||[]).forEach(H=>{
+            const zero=e.players.find(p=> (H?.[p]|0)===0);
+            if(zero) m[zero]++;
+          });
+          return m;
+        })();
+        sdC3=new Chart($('#sdCorrect'),{ type:'bar', data:{labels:e.players, datasets:[{label:'Rundensiege', data:e.players.map(p=>wins[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
+
+        const ex=(()=>{
+          const maxPos=Object.fromEntries(e.players.map(p=>[p,0]));
+          const maxNeg=Object.fromEntries(e.players.map(p=>[p,0]));
+          (e.points||[]).forEach(P=>{
+            e.players.forEach(pl=>{
+              const v=P?.[pl];
+              if(v==null) return;
+              if(v>maxPos[pl]) maxPos[pl]=v;
+              if(v<maxNeg[pl]) maxNeg[pl]=v;
+            });
+          });
+          return {maxPos,maxNeg};
+        })();
+        sdC4=new Chart($('#sdExtremes'),{ type:'bar', data:{labels:e.players, datasets:[{label:'Höchste Runde', data:e.players.map(p=>ex.maxPos?.[p]||0)},{label:'Größte Minusrunde', data:e.players.map(p=>ex.maxNeg?.[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false} });
+
+        $('#saveDetail').classList.remove('hidden');
+      },
+      closeSaveDetail(){ [sdC1,sdC2,sdC3,sdC4].forEach(c=>c&&c.destroy()); $('#saveDetail').classList.add('hidden'); },
+
+      _emptyBox(id, text){
+        const box = document.querySelector(`[data-chartbox="${id}"]`);
+        if(!box) return;
+        box.querySelector('.h-240').innerHTML = `<div class="h-240 flex items-center justify-center opacity-70 text-center px-4">${text}</div>`;
+      },
+      _ensureCanvas(id){
+        const box = document.querySelector(`[data-chartbox="${id}"]`);
+        if(!box) return null;
+        const wrap = box.querySelector('.h-240');
+        wrap.innerHTML = `<canvas id="${id}"></canvas>`;
+        return document.getElementById(id);
+      },
+
+      updateCharts(){
+        const havePlayers = S.players.length>=2;
+        const haveAnyRound = S.points.some(p=>Object.keys(p||{}).length>0) || S.hands.some(h=>Object.keys(h||{}).length>0);
+
+        [chartPoints,chartCorrect,chartExtremes,chartAccuracy].forEach(c=>c&&c.destroy());
+
+        if(!(havePlayers && haveAnyRound)){
+          this._emptyBox('chartPoints','Noch keine Runden – starte ein Spiel.');
+          this._emptyBox('chartCorrect','Noch keine vollständigen Runden.');
+          this._emptyBox('chartExtremes','Noch keine Ergebnisse.');
+          this._emptyBox('chartAccuracy','Noch keine Daten.');
+          return;
+        }
+
+        const c1=this._ensureCanvas('chartPoints'), c2=this._ensureCanvas('chartCorrect'),
+              c3=this._ensureCanvas('chartExtremes'), c4=this._ensureCanvas('chartAccuracy');
+
+        const labels=S.points.map((_,i)=>`R${i+1}`);
+        const totals=Analytics.perRoundTotals();
+        const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
+
+        const wins=Analytics.roundWins();
+        const extremes=Analytics.extremes();
+        const avgHand=Analytics.avgHand();
+
+        chartPoints=new Chart(c1,{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }});
+        chartCorrect=new Chart(c2,{ type:'bar', data:{labels:S.players, datasets:[{label:'Rundensiege', data:S.players.map(p=>wins[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+        chartExtremes=new Chart(c3,{ type:'bar', data:{ labels:S.players, datasets:[{label:'Höchste Runde', data:S.players.map(p=>extremes.maxPos[p])},{label:'Größte Minusrunde', data:S.players.map(p=>extremes.maxNeg[p])}]}, options:{responsive:true, maintainAspectRatio:false}});
+        chartAccuracy=new Chart(c4,{ type:'bar', data:{ labels:S.players, datasets:[{label:'Ø Hand-Summe', data:S.players.map(p=>avgHand[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+      },
+
+      updateGlobalCharts(){
+        [gaWins,gaAvg,gaBest,gaAcc,gaExt].forEach(c=>c&&c.destroy());
+        const agg = globalAggregates();
+
+        if(!agg.players.length){
+          this._emptyBox('gaWins','Noch keine gespeicherten Spiele.');
+          this._emptyBox('gaAvgScore','—');
+          this._emptyBox('gaBestScore','—');
+          this._emptyBox('gaAccuracy','—');
+          this._emptyBox('gaExtremes','—');
+          return;
+        }
+
+        const players = agg.players.slice(0,16);
+        const idx = players.map(p=> agg.players.indexOf(p));
+        const pick = (arr)=> idx.map(i=> arr[i]);
+
+        const c1=this._ensureCanvas('gaWins'), c2=this._ensureCanvas('gaAvgScore'),
+              c3=this._ensureCanvas('gaBestScore'), c4=this._ensureCanvas('gaAccuracy'),
+              c5=this._ensureCanvas('gaExtremes');
+
+        gaWins = new Chart(c1, { type:'bar',
+          data:{ labels:players, datasets:[{label:'Spiel-Siege', data: pick(agg.winVals)}] },
+          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, title:{display:true, text:`Gespeicherte Spiele: ${agg.totalGames}`}} }
+        });
+        gaAvg = new Chart(c2, { type:'bar',
+          data:{ labels:players, datasets:[{label:'Ø Endpunkte', data: pick(agg.avgScore)}] },
+          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+        });
+        gaBest = new Chart(c3, { type:'bar',
+          data:{ labels:players, datasets:[{label:'Bestscore', data: pick(agg.best)}] },
+          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+        });
+        gaAcc = new Chart(c4, { type:'bar',
+          data:{ labels:players, datasets:[{label:'Ø Hand-Summe', data: pick(agg.avgHand)}] },
+          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+        });
+        gaExt = new Chart(c5, { type:'bar',
+          data:{ labels:players, datasets:[{label:'Höchste Runde', data: pick(agg.maxP)},{label:'Größte Minusrunde (|x|)', data: pick(agg.maxN)}] },
+          options:{ responsive:true, maintainAspectRatio:false }
+        });
+      },
+
+      restart(){ Storage.clear(); location.reload(); }
+    };
+
+    /* ---------- Game flow ---------- */
+    const Game = {
+      buf:'',
+      d(x){ if(this.buf.length<3){ this.buf+=x; $('#numberDisplay').textContent=this.buf; } }, // Hand-Summen können >99 sein
+      cl(){ this.buf=''; $('#numberDisplay').textContent='0'; },
+      ok(){
+        let val=parseInt(this.buf||'0',10); if(!Number.isFinite(val)||val<0) val=0;
+        const idx=(S.stepIndex)%S.players.length;
+        const player=S.players[idx];
+
+        if(!S.hands[S.round-1]) S.hands[S.round-1]={};
+        S.hands[S.round-1][player]=val;
+        S.history.push({type:'hand', r:S.round-1, player, value:val});
+        S.stepIndex++;
+
+        // Runde fertig?
+        if(S.stepIndex>=S.players.length){
+          const H=S.hands[S.round-1];
+          const res=scoreRound(H);
+          if(res.error){
+            const m='❌ '+res.error+' Eingabe für diese Runde wird zurückgesetzt.';
+            $('#inputError').textContent=m; UI.toast(m);
+            S.hands[S.round-1]={}; S.stepIndex=0;
+            this.cl(); recalcTotals(); UI.top(); UI.tables(); Storage.save();
+            return;
+          }
+          S.points[S.round-1]=res.pts;
+          S.winners.push(res.winner);
+          S.history.push({type:'round', r:S.round-1, winner:res.winner, points:res.pts});
+          S.round++; S.stepIndex=0;
+        }
+
+        this.cl(); recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+
+        // Auto-Ende prüfen
+        let shouldEnd=false;
+        if(S.targetMode==='points'){
+          const max=Math.max(...S.players.map(p=>S.totals[p]||0));
+          if(max>=S.targetPoints) shouldEnd=true;
+        } else {
+          if(S.round> S.totalRounds) shouldEnd=true;
+        }
+        if(shouldEnd){ Handlers.end(true); }
+      }
+    };
+
+    /* ---------- Handlers ---------- */
+    const Handlers = {
+      start(){
+        const players=[...document.querySelectorAll('#playerInputs input')].map(i=>i.value.trim()).filter(Boolean);
+        if(players.length<2 || players.length>6){ $('#setupError').textContent='Bitte 2–6 Spieler angeben.'; return; }
+        S.players=players;
+
+        // Ziele & Joker
+        const modeBtn = $('#segTarget button.active')?.dataset.val || 'points';
+        S.targetMode = modeBtn;
+        if(S.targetMode==='points'){
+          S.targetPoints = parseInt($('#targetPts').value||'200',10);
+          S.jokerValue  = parseInt($('#joker').value||'30',10);
+        } else {
+          S.totalRounds = parseInt($('#targetR').value||'10',10);
+          S.jokerValue  = parseInt($('#jokerR').value||'30',10);
+        }
+        S.scoring = $('#segScore button.active')?.dataset.val || 'classic';
+
+        // Reset State
+        S.round=1; S.step='hands'; S.stepIndex=0;
+        S.hands=[]; S.points=[]; S.history=[]; S.winners=[]; S.savedFinal=false;
+        S.totals=Object.fromEntries(players.map(p=>[p,0]));
+
+        recalcTotals(); Storage.save(); showView('game'); UI.top(); UI.tables(); UI.updateCharts();
+      },
+      load(){
+        if(Storage.load()){
+          recalcTotals(); showView('game'); UI.top(); UI.tables(); UI.updateCharts();
+        }
+      },
+      reset(){ if(confirm('Wirklich alles zurücksetzen?')){ Storage.clear(); location.reload(); } },
+      delHands(i){ if(!confirm(`Eingaben in Runde ${i+1} löschen?`)) return;
+        S.hands[i]={}; S.points[i]={}; S.round=i+1; S.step='hands'; S.stepIndex=0; S.history.push({type:'wipeHands', r:i});
+        recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+      },
+      delRound(i){ if(!confirm(`Runde ${i+1} komplett löschen?`)) return;
+        S.hands[i]={}; S.points[i]={}; S.winners = S.winners.filter((_,idx)=> idx!==i);
+        S.round=i+1; S.step='hands'; S.stepIndex=0; S.history.push({type:'wipeRound', r:i});
+        recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+      },
+      redoRound(){
+        const r = S.round-1;
+        if(r<0) return;
+        if(!confirm(`Runde ${S.round} neu eingeben?`)) return;
+        S.hands[r]={}; S.points[r]={}; S.step='hands'; S.stepIndex=0;
+        $('#inputError').textContent='';
+        recalcTotals(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
+      },
+      end(auto=false){
+        recalcTotals(); UI.final(); $('#endView').classList.remove('hidden');
+        UI.updateEndCharts();
+
+        // Autosave end result once
+        if(!S.savedFinal){ Saves.saveFinished(true); S.savedFinal=true; Storage.save(); }
+
+        // Konfetti bei manuellem Ende
+        if(!auto){
+          const colors=['#6366f1','#38bdf8','#fbbf24','#34d399','#f472b6','#a5b4fc','#818cf8','#fca5a5','#bef264'];
+          for(let i=0;i<64;i++){
+            const d=document.createElement('div'); d.style.position='fixed'; d.style.zIndex=99999; d.style.pointerEvents='none';
+            d.style.width=(8+Math.random()*8)+'px'; d.style.height=(14+Math.random()*16)+'px'; d.style.borderRadius='4px';
+            d.style.left=(8+Math.random()*84)+'vw'; d.style.top='-80px'; d.style.opacity=.92; d.style.background = colors[Math.random()*colors.length|0];
+            d.animate([{ transform:`translateY(-80px) rotate(0deg)`, opacity:1 },{ transform:`translateY(96vh) rotate(340deg)`, opacity:0 }], { duration:1200+Math.random()*800, easing:'cubic-bezier(.4,0,.4,1)', fill:'forwards' });
+            document.body.appendChild(d); setTimeout(()=>d.remove(),2000);
+          }
+        }
+      }
+    };
+
+    /* ---------- Swipe to close EndView (back to Start) ---------- */
+    ;(function(){
+      const el = document.getElementById('endView');
+      let sx=0, sy=0, dx=0, dy=0, active=false;
+      function start(e){ const t=(e.touches?e.touches[0]:e); sx=t.clientX; sy=t.clientY; dx=dy=0; active=true; }
+      function move(e){ if(!active) return; const t=(e.touches?e.touches[0]:e); dx=t.clientX-sx; dy=t.clientY-sy; }
+      function end(){ if(!active) return; active=false; if(Math.abs(dx)>80 && Math.abs(dx)>Math.abs(dy)){ el.classList.add('hidden'); showView('setup'); } }
+      el.addEventListener('touchstart',start,{passive:true});
+      el.addEventListener('touchmove',move,{passive:true});
+      el.addEventListener('touchend',end);
+      el.addEventListener('pointerdown',start);
+      el.addEventListener('pointermove',move);
+      el.addEventListener('pointerup',end);
+    })();
+
+    /* ---------- Boot ---------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        $('#year').textContent = new Date().getFullYear();
+        UI.init();
+
+        // Spiel aus Speicher laden oder Setup zeigen
+        if (Storage.load()) {
+          recalcTotals();
+          showView('game');
+          UI.top();
+          UI.tables();
+          UI.updateCharts();
+        } else {
+          showView('setup');
+          UI.renderSavesHome();
+        }
+
+        // Mobile: Sidebar nicht „collapsed“ starten
+        if (window.innerWidth <= 900) {
+          $('#sidebar').classList.remove('collapsed');
+          $('#content').classList.remove('shifted');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Init-Fehler: ' + (e?.message || e));
+      }
+    });
+  </script>
 </body>
 </html>

@@ -1,1196 +1,1928 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="light">
+<html lang="de" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Wizard Scoreboard – Touch Pro · © Pascal Asch</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Wizard · Scoreboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg-grad: radial-gradient(1200px 800px at 60% 10%, #a5b4fc 0%, #6366f1 60%, #0f172a 100%);
-      --glass-bg: rgba(255,255,255,.9);
-      --text:#0b1020; --muted:#334155; --accent:#6366f1; --accent2:#38bdf8;
-      --row1:#e0f2fe; --row2:#eef2ff; --head1:#e0e7ff; --head2:#f1f5fd;
-      --input-bg:#ffffff; --input-border:#c7d2fe; --input-text:#0b1020;
-      --sidebar-w: 300px; --sidebar-w-collapsed: 72px;
-      --seg-bg:#eef2ff; --seg-on:#fff; --seg-border:#c7d2fe;
+    :root {
+      --bg: #0c0e1a;
+      --bg2: #111426;
+      --bg3: #181d2e;
+      --surface: rgba(255,255,255,0.045);
+      --surface2: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --text: #e8eaf6;
+      --text2: #8b93b8;
+      --text3: #555e88;
+      --gold: #f5c842;
+      --gold2: #e8a020;
+      --purple: #7c6fff;
+      --purple2: #a594ff;
+      --teal: #2dd4bf;
+      --red: #f87171;
+      --green: #4ade80;
+      --accent: var(--purple);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --keypad-gap: clamp(6px, 1.5vw, 12px);
+      --keypad-size: clamp(52px, 10vw, 80px);
+      --font-display: 'Cinzel', serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --sidebar-w: clamp(220px, 22vw, 280px);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+      --safe-l: env(safe-area-inset-left, 0px);
+      --safe-r: env(safe-area-inset-right, 0px);
     }
-    [data-theme="dark"]{
-      --bg-grad: radial-gradient(1200px 800px at 60% 10%, #0b122b 0%, #0a0f22 60%, #000 100%);
-      --glass-bg: rgba(17,24,39,.78);
-      --text:#e5e7eb; --muted:#94a3b8; --accent:#8b5cf6; --accent2:#22d3ee;
-      --row1:#0b122b; --row2:#0e172d; --head1:#111827; --head2:#0b122b;
-      --input-bg:#111827; --input-border:#334155; --input-text:#e5e7eb;
-      --seg-bg:#0e172d; --seg-on:#111827; --seg-border:#334155;
+    [data-theme="light"] {
+      --bg: #f0f2fc;
+      --bg2: #e8eaf5;
+      --bg3: #dde0f0;
+      --surface: rgba(255,255,255,0.7);
+      --surface2: rgba(255,255,255,0.9);
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --text: #0e1230;
+      --text2: #505a88;
+      --text3: #8891bb;
+      --gold: #c8970a;
+      --gold2: #a07208;
+      --purple: #5b50e8;
+      --purple2: #7c72ff;
     }
-    html,body{height:100%}
-    body{margin:0;font-family:'Inter',system-ui,Arial,sans-serif;background:var(--bg-grad);color:var(--text);overflow-x:hidden}
 
-    /* Parallax layers */
-    .plx{position:fixed;inset:-10vh -10vw;pointer-events:none;z-index:-1;filter:blur(30px);opacity:.45;transform:translate3d(0,0,0) scale(1.05);transition:opacity .6s ease}
-    .plx.l1{background:radial-gradient(900px 600px at 10% 20%, #a5b4fc55, transparent 70%)}
-    .plx.l2{background:radial-gradient(900px 600px at 80% 10%, #38bdf855, transparent 72%)}
-    .plx.l3{background:radial-gradient(900px 600px at 50% 90%, #8b5cf655, transparent 72%)}
-    [data-theme="dark"] .plx{opacity:.28}
-
-    .glass{background:var(--glass-bg);backdrop-filter:blur(14px) saturate(1.05);border-radius:18px;box-shadow:0 10px 40px #0000003a}
-    .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;padding:.85rem 1rem;font-weight:800}
-    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
-    .btn-muted{background:#e5e7eb}
-    [data-theme="dark"] .btn-muted{background:#1f2937;color:#e5e7eb}
-    .btn-danger{background:#ef4444;color:#fff}
-    .table-head-1{background:var(--head1);color:var(--text);font-weight:900}
-    .table-head-2{background:var(--head2);color:var(--muted)}
-    .row-tip{background:var(--row1)}
-    .row-res{background:var(--row2)}
-    .input{background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text)}
-    .sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);padding:14px;display:flex;flex-direction:column;gap:12px;transition:width .25s ease}
-    .sidebar.collapsed{width:var(--sidebar-w-collapsed)}
-    .content{margin-left:calc(var(--sidebar-w) + 16px);min-height:100vh;padding:14px;transition:margin-left .25s ease}
-    .content.shifted{margin-left:calc(var(--sidebar-w-collapsed) + 16px)}
-    .icon-label{margin-left:.5rem}
-    .sidebar.collapsed .icon-label{display:none}
-    @media (max-width: 900px){
-      .sidebar{transform:translateX(-110%);box-shadow:none}
-      .sidebar.open{transform:translateX(0);z-index:50}
-      .content{margin-left:0}
-      .content.shifted{margin-left:0}
-      #mobileShade{display:none}
-      .sidebar.open + #mobileShade{display:block;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
     }
-    #view-game .grid-2cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 1024px){ #view-game .grid-2cols{grid-template-columns:1fr} }
-    .leftPanel{display:grid;grid-template-rows:auto 1fr auto;gap:12px;height:calc(100vh - 28px)}
-    .rightPanel{height:calc(100vh - 28px);overflow:auto}
-    #keypadWrap{position:sticky;bottom:env(safe-area-inset-bottom);z-index:10}
-    .h-180{height:180px}
-    .h-240{height:240px}
-    #endView{z-index:99990}
-    #saveDetail{z-index:99995}
 
-    /* Segmented controls – responsive, same row */
-    .seg{display:flex;flex-wrap:wrap;background:var(--seg-bg);border:1px solid var(--seg-border);border-radius:14px;padding:6px;gap:6px;min-width:0}
-    .seg button{flex:1 1 140px;border-radius:10px;padding:.6rem .8rem;font-weight:700;color:var(--muted);background:transparent;border:1px solid transparent;white-space:nowrap}
-    .seg button.active{background:var(--seg-on);color:var(--text);border:1px solid var(--seg-border)}
+    /* Subtle animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80vw 60vh at 15% 10%, rgba(124,111,255,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60vw 50vh at 85% 80%, rgba(45,212,191,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50vw 40vh at 50% 50%, rgba(245,200,66,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-    .setup-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
-    @media (max-width: 768px){ .setup-opts{grid-template-columns:1fr} }
-    .minw0{min-width:0}
+    /* ── Layout shell ── */
+    #app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      overflow: hidden;
+    }
 
-    /* Center warning toast */
-    #toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99999;display:none}
-    #toast .bubble{padding:1rem 1.2rem;border-radius:14px;font-weight:800;box-shadow:0 10px 30px #00000033}
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      max-width: var(--sidebar-w);
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: calc(var(--safe-t) + 16px) 12px calc(var(--safe-b) + 16px) calc(var(--safe-l) + 12px);
+      gap: 4px;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1), opacity 0.28s;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+    #sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 8px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    #sidebar-logo .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--purple), var(--teal));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    #sidebar-logo .logo-text {
+      font-family: var(--font-display);
+      font-size: 17px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+    }
+    #sidebar-logo .logo-sub {
+      font-size: 10px;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
 
-    /* End overlay inner scroll */
-    #endView .panel{display:flex;flex-direction:column}
-    #endScroll{overflow:auto;max-height:50vh}
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text2);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .nav-btn.active { color: var(--purple2); }
+    .nav-btn .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-divider { height: 1px; background: var(--border); margin: 8px 4px; }
+    .nav-btn.nav-home {
+      margin-top: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .sidebar-footer {
+      font-size: 11px;
+      color: var(--text3);
+      padding: 8px 14px 0;
+      margin-top: 4px;
+    }
+
+    /* ── Mobile overlay ── */
+    #shade {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 90;
+      backdrop-filter: blur(2px);
+    }
+    #menuBtn {
+      display: none;
+      position: fixed;
+      top: calc(var(--safe-t) + 12px);
+      left: calc(var(--safe-l) + 12px);
+      z-index: 110;
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      border: 1px solid var(--border2);
+      background: var(--bg2);
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      align-items: center; justify-content: center;
+    }
+
+    /* ── Main content area ── */
+    #main {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Views ── */
+    .view {
+      display: none;
+      flex: 1;
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .view.active { display: flex; }
+
+    .view-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: calc(var(--safe-t) + 20px) calc(var(--safe-r) + 20px) calc(var(--safe-b) + 20px) 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── Cards / Surfaces ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-sm { padding: 14px 16px; }
+    .card + .card { margin-top: 14px; }
+
+    /* ── Setup view ── */
+    #view-setup .setup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      max-width: 900px;
+    }
+    @media (max-width: 700px) { #view-setup .setup-grid { grid-template-columns: 1fr; } }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 8px;
+    }
+    .view-title {
+      font-family: var(--font-display);
+      font-size: clamp(18px, 3vw, 26px);
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      margin-bottom: 18px;
+    }
+
+    /* Player inputs */
+    .player-input-wrap { position: relative; margin-bottom: 8px; }
+    .player-input-wrap::before {
+      content: attr(data-n);
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text3);
+      width: 20px;
+      text-align: center;
+    }
+    .player-input {
+      width: 100%;
+      padding: 13px 14px 13px 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    .player-input:focus { border-color: var(--purple); }
+    .player-input::placeholder { color: var(--text3); }
+
+    /* Segmented control */
+    .seg {
+      display: flex;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      gap: 4px;
+    }
+    .seg button {
+      flex: 1;
+      padding: 9px 8px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text2);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .seg button.active {
+      background: var(--surface2);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+    }
+    .toggle-label { font-size: 14px; font-weight: 500; color: var(--text); }
+    .toggle-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .toggle {
+      position: relative;
+      width: 48px; height: 28px;
+      cursor: pointer;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: var(--border2);
+      transition: background 0.2s;
+    }
+    .toggle input:checked ~ .toggle-track { background: var(--purple); }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .toggle input:checked ~ .toggle-track ~ .toggle-thumb { transform: translateX(20px); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 22px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      -webkit-appearance: none;
+    }
+    .btn:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple), var(--teal));
+      color: #fff;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold2), var(--gold));
+      color: #0e1230;
+    }
+    .btn-ghost {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-danger { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+    .btn-sm { padding: 9px 14px; font-size: 13px; }
+    .btn-full { width: 100%; }
+
+    /* Error/info */
+    .err { color: var(--red); font-size: 13px; font-weight: 600; min-height: 1.4em; margin-top: 4px; }
+    .info { color: var(--text2); font-size: 13px; }
+
+    /* ── GAME VIEW ── */
+    #view-game {
+      flex-direction: row;
+      overflow: hidden;
+    }
+    .game-left {
+      display: flex;
+      flex-direction: column;
+      width: clamp(280px, 38vw, 440px);
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      padding: calc(var(--safe-t) + 12px) 0 0;
+    }
+    .game-right {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: calc(var(--safe-t) + 14px) calc(var(--safe-r) + 14px) calc(var(--safe-b) + 14px) 14px;
+    }
+
+    /* Round info bar */
+    #roundBar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 14px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .round-badge {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 4vw, 32px);
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      line-height: 1;
+    }
+    .round-sub { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .meta-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--text2);
+      font-weight: 500;
+    }
+    .meta-pill b { color: var(--text); }
+    .meta-pills { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; padding-left: 8px; }
+
+    /* Phase area */
+    #phaseArea {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px 14px;
+      gap: 8px;
+    }
+    .phase-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      align-self: flex-start;
+    }
+    .phase-badge.pred { background: rgba(124,111,255,0.18); color: var(--purple2); border: 1px solid rgba(124,111,255,0.3); }
+    .phase-badge.res  { background: rgba(45,212,191,0.18); color: var(--teal); border: 1px solid rgba(45,212,191,0.3); }
+    .who-line { font-size: clamp(15px, 2.5vw, 20px); font-weight: 600; color: var(--text); }
+    .who-line b { color: var(--purple2); }
+    #numberDisplay {
+      font-family: var(--font-display);
+      font-size: clamp(64px, 14vw, 100px);
+      color: var(--gold);
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-align: center;
+      text-shadow: 0 0 40px rgba(245,200,66,0.2);
+      transition: transform 0.08s;
+    }
+    #numberDisplay.pulse { transform: scale(1.06); }
+    #remainInfo { text-align: center; font-size: 13px; color: var(--teal); font-weight: 600; min-height: 1.4em; }
+
+    /* Keypad */
+    #keypad {
+      padding: 10px 10px calc(var(--safe-b) + 10px);
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--keypad-gap);
+    }
+    .kbtn {
+      height: var(--keypad-size);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.08s, border-color 0.1s;
+      -webkit-appearance: none;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .kbtn:active { transform: scale(0.94); background: var(--surface2); border-color: var(--border2); }
+    .kbtn.kbtn-ok {
+      background: linear-gradient(135deg, var(--purple), var(--teal));
+      color: #fff;
+      border-color: transparent;
+      font-family: var(--font-body);
+      font-size: clamp(16px, 3vw, 20px);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .kbtn.kbtn-del { color: var(--text2); }
+
+    /* Scoreboard table */
+    .score-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .score-title { font-family: var(--font-display); font-size: 16px; color: var(--gold); letter-spacing: 0.06em; }
+    .score-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* Live score strip */
+    #liveScores {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 0 0 12px;
+      margin-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    #liveScores::-webkit-scrollbar { display: none; }
+    .score-chip {
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      min-width: 90px;
+      text-align: center;
+    }
+    .score-chip.leader { border-color: rgba(245,200,66,0.5); background: rgba(245,200,66,0.07); }
+    .score-chip .chip-name { font-size: 12px; font-weight: 600; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .score-chip .chip-pts { font-family: var(--font-display); font-size: 22px; color: var(--text); line-height: 1.1; }
+    .score-chip.leader .chip-pts { color: var(--gold); }
+    .score-chip .chip-delta { font-size: 11px; font-weight: 600; color: var(--text3); }
+    .score-chip .chip-delta.pos { color: var(--green); }
+    .score-chip .chip-delta.neg { color: var(--red); }
+
+    /* Round rows */
+    .round-row {
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .round-row-tip {
+      background: rgba(124,111,255,0.06);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .round-row-res {
+      background: rgba(45,212,191,0.05);
+      border-top: 1px solid var(--border);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .rr-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); min-width: 80px; }
+    .rr-player { flex: 1; min-width: 80px; }
+    .rr-player .rr-name { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rr-player .rr-val { font-size: 16px; font-weight: 700; color: var(--text); }
+    .rr-player .rr-pts { font-size: 11px; font-weight: 600; }
+    .rr-player .rr-pts.pos { color: var(--green); }
+    .rr-player .rr-pts.neg { color: var(--red); }
+    .rr-actions { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+    .rr-del { font-size: 11px; color: var(--red); opacity: 0.7; background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+    .rr-del:active { opacity: 1; background: rgba(248,113,113,0.1); }
+    .hidden-dot { font-size: 20px; color: var(--text3); }
+
+    /* ── Analytics ── */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .chart-title { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+    .chart-h { height: 200px; position: relative; }
+
+    /* ── History ── */
+    .save-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+    .save-meta { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+    .save-winner { font-size: 15px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+    .save-scores { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+    .save-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Rules ── */
+    .rule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .rule-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .rule-num { font-family: var(--font-display); font-size: 28px; color: var(--purple); opacity: 0.3; margin-bottom: 4px; }
+    .rule-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .rule-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+    .rule-body b { color: var(--gold); }
+
+    /* ── End overlay ── */
+    #endOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: calc(var(--safe-t) + 16px) calc(var(--safe-r) + 16px) calc(var(--safe-b) + 16px) calc(var(--safe-l) + 16px);
+    }
+    #endOverlay.visible { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+    .end-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto 16px;
+    }
+    .end-title {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 5vw, 34px);
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .winner-card {
+      background: rgba(245,200,66,0.08);
+      border: 1px solid rgba(245,200,66,0.25);
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .winner-crown { font-size: 40px; display: block; margin-bottom: 6px; }
+    .winner-name { font-family: var(--font-display); font-size: clamp(20px, 4vw, 28px); color: var(--gold); }
+    .winner-pts { font-size: 16px; color: var(--text2); margin-top: 4px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+    .stat-val { font-size: 22px; font-weight: 700; color: var(--text); }
+    .stat-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+    .end-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Save detail overlay */
+    #detailOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 210;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: calc(var(--safe-t) + 16px) 16px calc(var(--safe-b) + 16px);
+    }
+    #detailOverlay.visible { display: block; }
+    .detail-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(var(--safe-b) + 80px);
+      transform: translateX(-50%) translateY(20px);
+      z-index: 500;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast-inner {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    /* Custom rounds */
+    .custom-rounds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .custom-rounds-grid label { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+    .num-input {
+      width: 64px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+      -webkit-appearance: none;
+      text-align: center;
+    }
+    .num-input:focus { border-color: var(--purple); }
+
+    /* Mobile game layout */
+    @media (max-width: 900px) {
+      #sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        transform: translateX(-100%);
+        width: 280px;
+        min-width: 280px;
+        max-width: 280px;
+      }
+      #sidebar.open { transform: translateX(0); }
+      #shade { display: block; pointer-events: none; opacity: 0; transition: opacity 0.28s; }
+      #shade.visible { pointer-events: auto; opacity: 1; }
+      #menuBtn { display: flex; }
+      #view-game { flex-direction: column; }
+      .game-left {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding-top: calc(var(--safe-t) + 56px);
+      }
+      .game-right { padding-top: 12px; }
+      #roundBar { padding-top: 0; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    /* Confetti particle */
+    .confetti-p {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      border-radius: 3px;
+    }
+
+    /* Settings */
+    .settings-section { margin-bottom: 20px; }
+    .settings-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+    .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .settings-row { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .settings-row:last-child { border-bottom: none; }
+
+    /* Misc */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .ml-auto { margin-left: auto; }
+    .w-full { width: 100%; }
+    .text-center { text-align: center; }
+    .hidden { display: none !important; }
+
+    /* Accent highlight for active player */
+    .active-player-ring {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(124,111,255,0.15);
+    }
+
+    /* Score diff animation */
+    @keyframes popIn { 0%{transform:scale(0.7);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+    .pop-in { animation: popIn 0.25s ease; }
   </style>
 </head>
 <body>
-  <!-- Parallax layers -->
-  <div class="plx l1"></div>
-  <div class="plx l2"></div>
-  <div class="plx l3"></div>
+<div id="app">
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar glass">
-    <div class="flex items-center justify-between gap-2">
-      <button id="btnCollapse" class="btn btn-muted" title="Sidebar ein-/ausklappen">☰</button>
+  <aside id="sidebar">
+    <div id="sidebar-logo">
+      <div class="logo-icon">🪄</div>
+      <div>
+        <div class="logo-text">WIZARD</div>
+        <div class="logo-sub">Scoreboard</div>
+      </div>
     </div>
-    <div class="grid gap-2 mt-1">
-      <button class="btn btn-muted" data-nav="setup">🏠 <span class="icon-label">Start / Setup</span></button>
-      <button class="btn btn-muted" data-nav="game">📋 <span class="icon-label">Scoreboard</span></button>
-      <button class="btn btn-muted" data-nav="analytics">📈 <span class="icon-label">Analytics</span></button>
-      <button class="btn btn-muted" data-nav="history">🗂️ <span class="icon-label">Spielstände</span></button>
-      <button class="btn btn-muted" data-nav="rules">📜 <span class="icon-label">Regeln</span></button>
-      <button class="btn btn-muted" data-nav="settings">⚙️ <span class="icon-label">Settings</span></button>
-      <button id="btnHome" class="btn btn-primary">🏠 <span class="icon-label">Zur Startseite</span></button>
-    </div>
-    <div class="text-xs opacity-80 mt-auto">© <span id="year"></span> Pascal Asch</div>
+    <button class="nav-btn active" data-nav="setup"><span class="nav-icon">🏠</span> Start</button>
+    <button class="nav-btn" data-nav="game"><span class="nav-icon">📋</span> Scoreboard</button>
+    <button class="nav-btn" data-nav="analytics"><span class="nav-icon">📈</span> Analytics</button>
+    <button class="nav-btn" data-nav="history"><span class="nav-icon">🗂️</span> Spielstände</button>
+    <div class="nav-divider"></div>
+    <button class="nav-btn" data-nav="rules"><span class="nav-icon">📜</span> Regeln</button>
+    <button class="nav-btn" data-nav="settings"><span class="nav-icon">⚙️</span> Einstellungen</button>
+    <div class="nav-divider"></div>
+    <button class="nav-btn nav-home" id="btnHome"><span class="nav-icon">↗</span> Zur Übersicht</button>
+    <div class="sidebar-footer">© <span id="yearSpan"></span> Pascal Asch</div>
   </aside>
-  <div id="mobileShade"></div>
+  <div id="shade"></div>
+  <button id="menuBtn">☰</button>
 
-  <!-- CONTENT -->
-  <main id="content" class="content">
-    <!-- SETUP -->
-    <section id="view-setup" class="grid xl:grid-cols-2 gap-3">
-      <div class="glass p-4 grid gap-4">
-        <h1 class="text-2xl font-black" style="color:var(--accent)">Start / Setup</h1>
+  <!-- MAIN -->
+  <div id="main">
 
-        <div class="grid gap-2">
-          <label class="font-semibold">Spieler</label>
-          <div id="playerInputs" class="space-y-2">
-            <input class="input w-full px-4 py-4 rounded-xl" type="text" placeholder="Spieler 1" oninput="UI.addNext(this)">
-          </div>
-          <div class="text-sm" style="color:var(--muted)">Reihenfolge = Sitzreihenfolge (Dealer = erster Name in Runde 1)</div>
-        </div>
+    <!-- ── SETUP ── -->
+    <div id="view-setup" class="view active">
+      <div class="view-scroll">
+        <div class="view-title">Neues Spiel</div>
+        <div class="setup-grid">
 
-        <!-- Modus & Rundenregel -->
-        <div class="setup-opts">
-          <div class="grid gap-2 minw0">
-            <label class="font-semibold">Modus</label>
-            <div id="segMode" class="seg">
-              <button data-val="classic" class="active">Classic</button>
-              <button data-val="plusminus">Plus/Minus&nbsp;Eins</button>
-              <button data-val="leaderOnly">Leader-Only</button>
+          <!-- Left col -->
+          <div>
+            <div class="card">
+              <div class="section-label">Spieler (2–6)</div>
+              <div id="playerInputs"></div>
+              <div class="info mt-2">Reihenfolge = Sitzreihenfolge · Erster = Dealer Runde 1</div>
             </div>
-          </div>
-          <div class="grid gap-2 minw0">
-            <label class="font-semibold">Rundenregel</label>
-            <div id="segRounds" class="seg">
-              <button data-val="official" class="active">Offiziell</button>
-              <button data-val="custom">Benutzerdefiniert</button>
-            </div>
-            <div id="customRoundsWrap" class="hidden grid grid-cols-2 gap-2 text-sm mt-1">
-              <label class="flex items-center">3 Spieler: <input id="r3" type="number" min="1" class="input ml-2 w-20 px-2 py-1 rounded" value="20"></label>
-              <label class="flex items-center">4 Spieler: <input id="r4" type="number" min="1" class="input ml-2 w-20 px-2 py-1 rounded" value="15"></label>
-              <label class="flex items-center">5 Spieler: <input id="r5" type="number" min="1" class="input ml-2 w-20 px-2 py-1 rounded" value="12"></label>
-              <label class="flex items-center">6 Spieler: <input id="r6" type="number" min="1" class="input ml-2 w-20 px-2 py-1 rounded" value="10"></label>
-            </div>
-          </div>
-          <div class="col-span-2 mt-1">
-            <label class="flex items-center gap-2">
-              <input id="hiddenBids" type="checkbox" class="h-5 w-5">
-              <span>Verdeckte Ansagen (anzeigen, wenn alle getippt haben)</span>
-            </label>
-          </div>
-        </div>
 
-        <div class="flex flex-wrap items-center justify-center gap-3 pt-1">
-          <button id="btnStart" class="btn btn-primary text-lg">🚀 Spiel starten</button>
-          <button id="btnLoad" class="btn btn-muted text-lg hidden">📂 Fortsetzen</button>
-          <button id="btnOpenSaves" class="btn btn-muted text-lg" data-nav="history">💾 Spielstände</button>
-        </div>
-        <div id="setupError" class="text-red-500 font-semibold text-center"></div>
-      </div>
-
-      <!-- rechte Home-Spalte -->
-      <div class="grid gap-3">
-        <div class="glass p-4">
-          <h2 class="font-extrabold mb-3" style="color:var(--accent)">Regeln</h2>
-          <div class="grid sm:grid-cols-2 gap-2 text-sm">
-            <div class="glass p-3"><div class="font-bold mb-1">Deck</div><div>60 Karten: 4×(1–13) + 4 Zauberer + 4 Narren</div></div>
-            <div class="glass p-3"><div class="font-bold mb-1">Runden</div><div>Runde r → r Karten pro Person · N = 60 ÷ Spieler</div></div>
-            <div class="glass p-3"><div class="font-bold mb-1">Trumpf</div><div>Aufgedeckte Karte = Trumpf; Narr = kein Trumpf; Zauberer = Dealer wählt; letzte Runde: kein Trumpf</div></div>
-            <div class="glass p-3"><div class="font-bold mb-1">Wertung</div><div>Treffer: <b>20 + 10×Stiche</b> · Daneben: <b>−10 × Differenz</b></div></div>
-          </div>
-          <div class="mt-3 flex justify-center"><button class="btn btn-muted" data-nav="rules">Mehr Regeln →</button></div>
-        </div>
-
-        <div class="glass p-4">
-          <h2 class="font-extrabold mb-2" style="color:var(--accent)">Schnellzugriff: Analytics</h2>
-          <div class="text-sm" style="color:var(--muted)">Globale Auswertung aller gespeicherten Spiele oder Live-Analytics.</div>
-          <div class="mt-3 flex justify-center"><button class="btn btn-muted" data-nav="analytics">Analytics öffnen →</button></div>
-        </div>
-
-        <div class="glass p-4">
-          <h2 class="font-extrabold mb-2" style="color:var(--accent)">Letzte Spielstände</h2>
-          <div id="savesListHome" class="grid gap-2 text-sm"></div>
-          <div class="mt-2 flex justify-center"><button class="btn btn-muted" data-nav="history">Alle Spielstände →</button></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- GAME -->
-    <section id="view-game" class="hidden">
-      <div class="grid-2cols">
-        <!-- LEFT -->
-        <div class="leftPanel">
-          <div class="glass p-4 grid md:grid-cols-3 gap-2">
-            <div>
-              <div class="text-sm" style="color:var(--muted)">Runde</div>
-              <div id="roundProgress" class="text-2xl font-extrabold -mt-1">1/—</div>
-            </div>
-            <div id="dealerLine" class="text-sm md:text-base">🃏 Kartengeber: –</div>
-            <div id="starterLine" class="text-sm md:text-base">🎤 Ansage beginnt bei: –</div>
-            <div id="tricksLine" class="md:col-span-3">🎯 Mögliche Stiche: –</div>
-          </div>
-
-          <div class="glass p-4 grid gap-2">
-            <div id="phaseTitle" class="text-xl font-extrabold" style="color:var(--accent)">Vorhersage</div>
-            <div id="phaseHint" class="text-sm" style="color:var(--muted)">Offene Ansagen</div>
-            <div id="whoPrompt" class="text-2xl font-bold">Wie viele Stiche …?</div>
-            <div id="numberDisplay" class="text-6xl font-black select-none" style="color:var(--accent)">0</div>
-            <div id="remainInfo" class="text-sm" style="color:var(--muted)"></div>
-            <div id="inputError" class="text-red-500 font-semibold min-h-[1.2em]"></div>
-          </div>
-
-          <div id="keypadWrap" class="glass p-3">
-            <div class="grid grid-cols-3 gap-2 select-none">
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('1')">1</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('2')">2</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('3')">3</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('4')">4</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('5')">5</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('6')">6</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('7')">7</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('8')">8</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('9')">9</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.cl()">⌫</button>
-              <button class="py-5 rounded-xl input text-2xl font-black" onclick="Game.d('0')">0</button>
-              <button class="py-5 rounded-xl text-white text-2xl font-black" style="background:linear-gradient(90deg,var(--accent),var(--accent2))" onclick="Game.ok()">OK</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- RIGHT -->
-        <div class="rightPanel">
-          <div class="glass p-3">
-            <div class="flex items-center justify-between mb-2">
-              <h2 class="font-bold" style="color:var(--accent)">🪄 Spielverlauf</h2>
-              <div class="hidden md:flex gap-2">
-                <button id="btnRedoRound" class="btn btn-muted">🔁 Runde neu</button>
-                <button id="btnEnd" class="btn btn-primary">🏁 Beenden</button>
-                <button id="btnReset" class="btn btn-danger">🔄 Reset</button>
+            <div class="card" style="margin-top:14px">
+              <div class="section-label">Spielmodus</div>
+              <div id="segMode" class="seg">
+                <button data-val="classic" class="active">Classic</button>
+                <button data-val="plusminus">±Eins</button>
+                <button data-val="leaderOnly">Leader</button>
+              </div>
+              <div style="margin-top:14px">
+                <div class="section-label">Rundenregel</div>
+                <div id="segRounds" class="seg">
+                  <button data-val="official" class="active">Offiziell</button>
+                  <button data-val="custom">Individuell</button>
+                </div>
+                <div id="customRoundsWrap" class="custom-rounds-grid hidden">
+                  <label>3 Sp: <input id="r3" type="number" min="1" class="num-input" value="20"/></label>
+                  <label>4 Sp: <input id="r4" type="number" min="1" class="num-input" value="15"/></label>
+                  <label>5 Sp: <input id="r5" type="number" min="1" class="num-input" value="12"/></label>
+                  <label>6 Sp: <input id="r6" type="number" min="1" class="num-input" value="10"/></label>
+                </div>
+              </div>
+              <div class="nav-divider" style="margin:14px 0 10px"></div>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Verdeckte Ansagen</div>
+                  <div class="toggle-sub">Tipps sichtbar nach letzter Ansage</div>
+                </div>
+                <label class="toggle">
+                  <input id="hiddenBids" type="checkbox"/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
               </div>
             </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-sm text-center" id="roundTable">
-                <thead>
-                  <tr class="table-head-1" id="hdr1"></tr>
-                  <tr class="table-head-2" id="hdr2"></tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-              </table>
+
+            <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button id="btnStart" class="btn btn-gold" style="flex:1; min-width:140px;">🚀 Spiel starten</button>
+              <button id="btnLoad" class="btn btn-ghost hidden" style="flex:1; min-width:120px;">📂 Fortsetzen</button>
+            </div>
+            <div id="setupError" class="err mt-2"></div>
+          </div>
+
+          <!-- Right col -->
+          <div>
+            <div class="card">
+              <div class="section-label">Wertung auf einen Blick</div>
+              <div style="display:grid; gap:8px; margin-top:4px;">
+                <div style="display:flex; gap:10px; align-items:flex-start;">
+                  <div style="width:28px; height:28px; border-radius:8px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); display:flex;align-items:center;justify-content:center; font-size:14px; flex-shrink:0;">✓</div>
+                  <div><div style="font-size:14px;font-weight:600;color:var(--green)">Treffer</div><div class="info">20 + 10 × angesagte Stiche</div></div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:flex-start;">
+                  <div style="width:28px; height:28px; border-radius:8px; background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.3); display:flex;align-items:center;justify-content:center; font-size:14px; flex-shrink:0;">✗</div>
+                  <div><div style="font-size:14px;font-weight:600;color:var(--red)">Daneben</div><div class="info">−10 × |Differenz|</div></div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:flex-start;">
+                  <div style="width:28px; height:28px; border-radius:8px; background:rgba(245,200,66,0.1); border:1px solid rgba(245,200,66,0.3); display:flex;align-items:center;justify-content:center; font-size:14px; flex-shrink:0;">0</div>
+                  <div><div style="font-size:14px;font-weight:600;color:var(--gold)">Null-Tipp korrekt</div><div class="info">20 Punkte (= 20 + 10×0)</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:14px">
+              <div class="section-label">Letzte Spiele</div>
+              <div id="savesListHome"></div>
+              <button class="btn btn-ghost btn-sm btn-full mt-3" data-nav="history">Alle Spielstände →</button>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- ANALYTICS -->
-    <section id="view-analytics" class="hidden grid gap-3">
-      <div class="glass p-3 flex gap-2 justify-between items-center">
-        <div class="font-extrabold" style="color:var(--accent)">Analytics</div>
-        <div class="flex gap-2">
-          <button id="btnAnaCurrent" class="btn btn-muted">Aktuelles Spiel</button>
-          <button id="btnAnaGlobal" class="btn btn-primary">Alle Spielstände</button>
-        </div>
-      </div>
-
-      <div id="ana-current" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div class="glass p-4" data-chartbox="chartPoints"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Punkteverlauf (Runden)</h3><div class="h-240"><canvas id="chartPoints"></canvas></div></div>
-        <div class="glass p-4" data-chartbox="chartCorrect"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Korrekte Tipps</h3><div class="h-240"><canvas id="chartCorrect"></canvas></div></div>
-        <div class="glass p-4 lg:col-span-2" data-chartbox="chartExtremes"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Max. Stiche & Größte Abweichung</h3><div class="h-240"><canvas id="chartExtremes"></canvas></div></div>
-        <div class="glass p-4 lg:col-span-2" data-chartbox="chartAccuracy"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Trefferquote (%)</h3><div class="h-240"><canvas id="chartAccuracy"></canvas></div></div>
-      </div>
-
-      <div id="ana-global" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div class="glass p-4" data-chartbox="gaWins"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Siege (alle Spiele)</h3><div class="h-240"><canvas id="gaWins"></canvas></div></div>
-        <div class="glass p-4" data-chartbox="gaAvgScore"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø Endpunkte pro Spieler</h3><div class="h-240"><canvas id="gaAvgScore"></canvas></div></div>
-        <div class="glass p-4 lg:col-span-2" data-chartbox="gaBestScore"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Beste Punkte (Highscore)</h3><div class="h-240"><canvas id="gaBestScore"></canvas></div></div>
-        <div class="glass p-4 lg:col-span-2" data-chartbox="gaAccuracy"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Ø Trefferquote (%)</h3><div class="h-240"><canvas id="gaAccuracy"></canvas></div></div>
-        <div class="glass p-4 lg:col-span-2" data-chartbox="gaExtremes"><h3 class="font-extrabold mb-2" style="color:var(--accent)">Extrema: Max. Stiche / Max. Abweichung</h3><div class="h-240"><canvas id="gaExtremes"></canvas></div></div>
-      </div>
-    </section>
-
-    <!-- HISTORY -->
-    <section id="view-history" class="hidden grid md:grid-cols-2 xl:grid-cols-3 gap-3">
-      <div class="glass p-4 md:col-span-2 xl:col-span-3 flex items-center justify-between">
-        <h3 class="text-xl font-extrabold" style="color:var(--accent)">Spielstände & Hall of Fame</h3>
-        <div class="flex gap-2">
-          <button class="btn btn-muted" onclick="Saves.exportJSON()">⬇️ Export JSON</button>
-          <button class="btn btn-muted" onclick="Saves.importJSON()">⬆️ Import JSON</button>
-        </div>
-      </div>
-      <div id="savesList" class="grid md:grid-cols-2 xl:grid-cols-3 gap-3 md:col-span-2 xl:col-span-3"></div>
-    </section>
-
-    <!-- RULES -->
-    <section id="view-rules" class="hidden grid gap-3">
-      <div class="glass p-5">
-        <h3 class="text-xl font-extrabold mb-4" style="color:var(--accent)">Regeln</h3>
-        <div class="grid lg:grid-cols-2 gap-3 text-sm">
-          <div class="glass p-4"><div class="font-bold mb-1">1) Deck</div><div>60 Karten: 4×(1–13), 4× Zauberer, 4× Narr.</div></div>
-          <div class="glass p-4"><div class="font-bold mb-1">2) Runden</div><div>In Runde r erhält jede Person r Karten. Max. Runden N = <b>60 ÷ Spieler</b> (3→20, 4→15, 5→12, 6→10).</div></div>
-          <div class="glass p-4"><div class="font-bold mb-1">3) Trumpf</div><div>Aufgedeckte Karte = Trumpf. Narr = kein Trumpf. Zauberer = Dealer wählt Trumpf. Letzte Runde ohne Trumpf.</div></div>
-          <div class="glass p-4"><div class="font-bold mb-1">4) Ansage</div><div>Start links vom Dealer. Optional verdeckt. Varianten: <i>Plus/Minus Eins</i> (Summe ≠ r), <i>Leader-Only</i> (Führender darf Summe nicht „even“ machen).</div></div>
-          <div class="glass p-4 lg:col-span-2"><div class="font-bold mb-1">5) Wertung</div><div>Treffer: <b>20 + 10×Stiche</b> · Daneben: <b>−10 × Differenz</b> · Korrekt 0 angesagt = 20 Punkte.</div></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="view-settings" class="hidden grid gap-3">
-      <div class="glass p-4 flex items-center justify-between">
-        <div>
-          <div class="font-semibold">Dark Mode</div>
-          <div class="text-sm" style="color:var(--muted)">Schaltet die edle Nachtansicht um.</div>
-        </div>
-        <label class="inline-flex items-center cursor-pointer">
-          <input id="toggleDark" type="checkbox" class="sr-only peer">
-          <div class="w-14 h-8 bg-gray-300 rounded-full peer-checked:bg-indigo-500 relative">
-            <div class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-all peer-checked:left-7"></div>
+    <!-- ── GAME ── -->
+    <div id="view-game" class="view">
+      <!-- Left: input panel -->
+      <div class="game-left">
+        <div id="roundBar">
+          <div>
+            <div class="round-sub">Runde</div>
+            <div class="round-badge" id="roundDisplay">1/—</div>
           </div>
-        </label>
-      </div>
-    </section>
-  </main>
+          <div class="meta-pills" id="metaPills"></div>
+        </div>
 
-  <!-- END OVERLAY -->
-  <div id="endView" class="hidden fixed inset-0 bg-black/30 p-3 md:p-8">
-    <div id="endContainer" class="mx-auto max-w-6xl grid md:grid-cols-2 gap-4 md:gap-6 h-full">
-      <section class="glass p-4 md:p-6 panel">
-        <h3 class="text-3xl font-extrabold mb-2" style="color:var(--accent)">Endergebnis</h3>
-        <div id="finalResult" class="mb-3"></div>
-        <div id="extraStats" class="mb-4"></div>
-        <div id="endScroll" class="grid grid-cols-1 gap-3">
-          <div class="glass p-3"><div class="font-bold mb-1">Punkteverlauf</div><div class="h-180"><canvas id="endC1"></canvas></div></div>
-          <div class="glass p-3"><div class="font-bold mb-1">Endpunkte</div><div class="h-180"><canvas id="endC2"></canvas></div></div>
-          <div class="glass p-3"><div class="font-bold mb-1">Korrekte Tipps</div><div class="h-180"><canvas id="endC3"></canvas></div></div>
-          <div class="glass p-3"><div class="font-bold mb-1">Extrema</div><div class="h-180"><canvas id="endC4"></canvas></div></div>
+        <div id="phaseArea">
+          <div id="phaseBadge" class="phase-badge pred">Vorhersage</div>
+          <div id="phaseHint" class="info"></div>
+          <div id="whoPrompt" class="who-line"></div>
+          <div id="numberDisplay">0</div>
+          <div id="remainInfo"></div>
+          <div id="inputError" class="err text-center"></div>
         </div>
-        <div class="mt-3 grid grid-cols-2 gap-3">
-          <button class="btn btn-primary" onclick="UI.csv()">⬇️ CSV</button>
-          <button class="btn btn-danger" onclick="UI.restart()">Neues Spiel</button>
-        </div>
-      </section>
-      <section class="glass p-4 md:p-6 panel">
-        <h3 class="text-2xl font-bold mb-2" style="color:var(--accent)">Abschließender Verlauf</h3>
-        <div class="overflow-x-auto grow">
-          <table class="min-w-full text-sm text-center" id="finalTable">
-            <thead class="table-head-1">
-              <tr id="finalHdr"></tr>
-            </thead>
-            <tbody id="finalBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  </div>
 
-  <!-- SAVE DETAIL OVERLAY -->
-  <div id="saveDetail" class="hidden fixed inset-0 bg-black/40 p-3 md:p-6">
-    <div class="glass mx-auto max-w-7xl w-full h-[calc(100vh-24px)] md:h-[calc(100vh-48px)] p-4 md:p-6 flex flex-col">
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <div id="sdTitle" class="text-xl font-extrabold" style="color:var(--accent)">Spiel-Details</div>
-          <div id="sdMeta" class="text-sm" style="color:var(--muted)"></div>
-        </div>
-        <div class="flex gap-2">
-          <button id="btnSdClose" class="btn btn-muted">✖️ Schließen</button>
+        <div id="keypad">
+          <div class="keypad-grid">
+            <button class="kbtn" onclick="Game.d('1')">1</button>
+            <button class="kbtn" onclick="Game.d('2')">2</button>
+            <button class="kbtn" onclick="Game.d('3')">3</button>
+            <button class="kbtn" onclick="Game.d('4')">4</button>
+            <button class="kbtn" onclick="Game.d('5')">5</button>
+            <button class="kbtn" onclick="Game.d('6')">6</button>
+            <button class="kbtn" onclick="Game.d('7')">7</button>
+            <button class="kbtn" onclick="Game.d('8')">8</button>
+            <button class="kbtn" onclick="Game.d('9')">9</button>
+            <button class="kbtn kbtn-del" onclick="Game.cl()">⌫</button>
+            <button class="kbtn" onclick="Game.d('0')">0</button>
+            <button class="kbtn kbtn-ok" onclick="Game.ok()">OK</button>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 overflow-hidden">
-        <div class="glass p-3"><div class="font-bold mb-1">Punkteverlauf</div><div class="h-240"><canvas id="sdPoints"></canvas></div></div>
-        <div class="glass p-3"><div class="font-bold mb-1">Endpunkte</div><div class="h-240"><canvas id="sdScores"></canvas></div></div>
-        <div class="glass p-3"><div class="font-bold mb-1">Korrekte Tipps</div><div class="h-240"><canvas id="sdCorrect"></canvas></div></div>
-        <div class="glass p-3"><div class="font-bold mb-1">Extrema</div><div class="h-240"><canvas id="sdExtremes"></canvas></div></div>
+
+      <!-- Right: scoreboard -->
+      <div class="game-right">
+        <div class="score-header">
+          <div class="score-title">🪄 Verlauf</div>
+          <div class="score-actions">
+            <button class="btn btn-ghost btn-sm" id="btnRedoRound">↺ Runde</button>
+            <button class="btn btn-primary btn-sm" id="btnEnd">🏁 Ende</button>
+            <button class="btn btn-danger btn-sm" id="btnReset">Reset</button>
+          </div>
+        </div>
+
+        <div id="liveScores"></div>
+        <div id="roundHistory"></div>
       </div>
     </div>
+
+    <!-- ── ANALYTICS ── -->
+    <div id="view-analytics" class="view">
+      <div class="view-scroll">
+        <div class="view-title">Analytics</div>
+        <div class="flex gap-2" style="margin-bottom:16px; flex-wrap:wrap;">
+          <button id="btnAnaCurrent" class="btn btn-ghost btn-sm active-tab">Aktuelles Spiel</button>
+          <button id="btnAnaGlobal" class="btn btn-ghost btn-sm">Alle Spiele</button>
+        </div>
+
+        <div id="ana-current">
+          <div class="chart-grid">
+            <div class="chart-card" data-cbox="chartPoints"><div class="chart-title">Punkteverlauf</div><div class="chart-h"><canvas id="chartPoints"></canvas></div></div>
+            <div class="chart-card" data-cbox="chartCorrect"><div class="chart-title">Korrekte Tipps</div><div class="chart-h"><canvas id="chartCorrect"></canvas></div></div>
+            <div class="chart-card" data-cbox="chartAccuracy"><div class="chart-title">Trefferquote %</div><div class="chart-h"><canvas id="chartAccuracy"></canvas></div></div>
+            <div class="chart-card" data-cbox="chartExtremes"><div class="chart-title">Extrema</div><div class="chart-h"><canvas id="chartExtremes"></canvas></div></div>
+          </div>
+        </div>
+
+        <div id="ana-global" class="hidden">
+          <div class="chart-grid">
+            <div class="chart-card" data-cbox="gaWins"><div class="chart-title">Siege gesamt</div><div class="chart-h"><canvas id="gaWins"></canvas></div></div>
+            <div class="chart-card" data-cbox="gaAvgScore"><div class="chart-title">Ø Endpunkte</div><div class="chart-h"><canvas id="gaAvgScore"></canvas></div></div>
+            <div class="chart-card" data-cbox="gaBestScore"><div class="chart-title">Highscore</div><div class="chart-h"><canvas id="gaBestScore"></canvas></div></div>
+            <div class="chart-card" data-cbox="gaAccuracy"><div class="chart-title">Ø Trefferquote %</div><div class="chart-h"><canvas id="gaAccuracy"></canvas></div></div>
+            <div class="chart-card" data-cbox="gaExtremes"><div class="chart-title">Extrema gesamt</div><div class="chart-h"><canvas id="gaExtremes"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div id="view-history" class="view">
+      <div class="view-scroll">
+        <div class="flex items-center gap-3" style="margin-bottom:16px; flex-wrap:wrap;">
+          <div class="view-title" style="margin-bottom:0">Spielstände</div>
+          <div class="ml-auto flex gap-2 flex-wrap">
+            <button class="btn btn-ghost btn-sm" onclick="Saves.exportJSON()">⬇ Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="Saves.importJSON()">⬆ Import</button>
+          </div>
+        </div>
+        <div id="savesList"></div>
+      </div>
+    </div>
+
+    <!-- ── RULES ── -->
+    <div id="view-rules" class="view">
+      <div class="view-scroll">
+        <div class="view-title">Spielregeln</div>
+        <div class="rule-grid">
+          <div class="rule-card">
+            <div class="rule-num">01</div>
+            <div class="rule-title">Das Deck</div>
+            <div class="rule-body">60 Karten: 4×(1–13), 4 Zauberer, 4 Narren. In Runde <b>r</b> erhält jeder Spieler genau <b>r</b> Karten.</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">02</div>
+            <div class="rule-title">Rundenanzahl</div>
+            <div class="rule-body">Max. Runden = <b>60 ÷ Spieleranzahl</b>: 3 Sp → 20, 4 Sp → 15, 5 Sp → 12, 6 Sp → 10.</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">03</div>
+            <div class="rule-title">Trumpf</div>
+            <div class="rule-body">Aufgedeckte Karte = Trumpf. <b>Narr</b> = kein Trumpf. <b>Zauberer</b> = Dealer wählt Trumpf. Letzte Runde: kein Trumpf.</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">04</div>
+            <div class="rule-title">Kartengeber & Ansage</div>
+            <div class="rule-body">Dealer rotiert jede Runde. Ansage beginnt <b>links</b> vom Dealer, geht reihum. Letzter ist der Dealer selbst.</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">05</div>
+            <div class="rule-title">Stichansagen</div>
+            <div class="rule-body">Jeder sagt an, wie viele Stiche er macht. Wert 0 ist erlaubt. Ansagen müssen nicht der Stichzahl entsprechen (Classic-Modus).</div>
+          </div>
+          <div class="rule-card" style="grid-column:span 1;">
+            <div class="rule-num">06</div>
+            <div class="rule-title">Wertung</div>
+            <div class="rule-body">
+              Treffer: <b>+20 + 10 × Stiche</b><br>
+              Daneben: <b>−10 × |Differenz|</b><br>
+              Null korrekt = <b>+20</b> Punkte.
+            </div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">07</div>
+            <div class="rule-title">Modus: ±Eins</div>
+            <div class="rule-body">Die Summe aller Ansagen darf nicht der aktuellen Rundenzahl entsprechen. Der letzte Ansager ist eingeschränkt.</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">08</div>
+            <div class="rule-title">Modus: Leader</div>
+            <div class="rule-body">Ist der Führende alleinig in Front <b>und</b> gibt als letzter an, darf er die Summe nicht „even" (= Rundenzahl) machen.</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-num">09</div>
+            <div class="rule-title">Stiche erfassen</div>
+            <div class="rule-body">Ergebnisse werden der Reihe nach eingegeben. Die Summe aller Stiche muss <b>exakt</b> der Rundenzahl entsprechen.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS ── -->
+    <div id="view-settings" class="view">
+      <div class="view-scroll">
+        <div class="view-title">Einstellungen</div>
+        <div class="settings-section">
+          <div class="settings-section-title">Darstellung</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="toggle-row" style="padding:0;">
+                <div>
+                  <div class="toggle-label">Dark Mode</div>
+                  <div class="toggle-sub">Dunkles Design (empfohlen für Abend/Nacht)</div>
+                </div>
+                <label class="toggle">
+                  <input id="toggleDark" type="checkbox"/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Daten</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div style="margin-bottom:8px;"><div class="toggle-label">Spielstände exportieren</div><div class="toggle-sub">Alle gespeicherten Spiele als JSON-Datei</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="Saves.exportJSON()">⬇ Export JSON</button>
+            </div>
+            <div class="settings-row">
+              <div style="margin-bottom:8px;"><div class="toggle-label">Spielstände importieren</div><div class="toggle-sub">JSON-Datei einlesen und zusammenführen</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="Saves.importJSON()">⬆ Import JSON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- END OVERLAY -->
+<div id="endOverlay">
+  <div class="end-panel">
+    <div class="end-title">Spielende</div>
+    <div class="winner-card">
+      <span class="winner-crown">👑</span>
+      <div id="winnerName" class="winner-name"></div>
+      <div id="winnerPts" class="winner-pts"></div>
+    </div>
+    <div class="stats-grid" id="endStats"></div>
+    <div class="chart-grid" style="margin-bottom:16px;">
+      <div class="chart-card" style="background:var(--bg3)"><div class="chart-title">Punkteverlauf</div><div class="chart-h"><canvas id="endC1"></canvas></div></div>
+      <div class="chart-card" style="background:var(--bg3)"><div class="chart-title">Endpunkte</div><div class="chart-h"><canvas id="endC2"></canvas></div></div>
+    </div>
+    <div class="end-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="UI.csv()">⬇ CSV</button>
+      <button class="btn btn-primary" style="flex:1" onclick="UI.restart()">Neues Spiel</button>
+    </div>
   </div>
+</div>
 
-  <!-- Center Toast -->
-  <div id="toast"><div class="glass bubble"></div></div>
+<!-- SAVE DETAIL -->
+<div id="detailOverlay">
+  <div class="detail-panel">
+    <div class="flex items-center gap-2" style="margin-bottom:14px; flex-wrap:wrap;">
+      <div>
+        <div id="sdTitle" class="score-title"></div>
+        <div id="sdMeta" class="info"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm ml-auto" id="btnSdClose">✕ Schließen</button>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card" style="background:var(--bg3)"><div class="chart-title">Punkteverlauf</div><div class="chart-h"><canvas id="sdPoints"></canvas></div></div>
+      <div class="chart-card" style="background:var(--bg3)"><div class="chart-title">Endpunkte</div><div class="chart-h"><canvas id="sdScores"></canvas></div></div>
+      <div class="chart-card" style="background:var(--bg3)"><div class="chart-title">Korrekte Tipps</div><div class="chart-h"><canvas id="sdCorrect"></canvas></div></div>
+      <div class="chart-card" style="background:var(--bg3)"><div class="chart-title">Extrema</div><div class="chart-h"><canvas id="sdExtremes"></canvas></div></div>
+    </div>
+  </div>
+</div>
 
-  <script>
-    const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
-    const saveKey = 'wizard.touch.v9';
-    const savesKey = 'wizard.touch.v9.saves'; // (Legacy) – wird migriert
-    const settingsKey='wizard.touch.v9.settings';
-    const fmt = n => (n>=0? '+'+n : n);
+<!-- TOAST -->
+<div id="toast"><div class="toast-inner" id="toastMsg"></div></div>
 
-    // NEU: globaler Container + Schema
-    const GAME_ID = 'wizard';
-    const SAVE_SCHEMA = 1;
-    const GLOBAL_SAVES_KEY = 'pascal.spiele.saves.v1';
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmt = n => n >= 0 ? '+' + n : String(n);
 
-    const S = {
-      players:[], round:1, maxRounds:0, step:'prediction', stepIndex:0,
-      mode:'classic', hiddenBids:false, roundRule:'official',
-      customRounds:{3:20,4:15,5:12,6:10},
-      predictions:[], results:[], scores:{}, history:[], savedFinal:false
-    };
-    const Settings = { theme:'light', sidebar:'expanded' };
+/* ── Keys ── */
+const KEY_STATE    = 'wizard.v10.state';
+const KEY_SETTINGS = 'wizard.v10.settings';
+const KEY_GLOBAL   = 'pascal.spiele.saves.v1';
+const KEY_LEGACY   = 'wizard.touch.v9.saves';
+const GAME_ID      = 'wizard';
 
-    /* ---------- Storage (robust) ---------- */
-    const safeLS = {
-      get(k){ try { return localStorage.getItem(k); } catch { return null; } },
-      set(k,v){ try { localStorage.setItem(k,v); } catch {} },
-      remove(k){ try { localStorage.removeItem(k); } catch {} }
-    };
+/* ── State ── */
+const S = {
+  players: [], round: 1, maxRounds: 0,
+  step: 'prediction', stepIndex: 0,
+  mode: 'classic', hiddenBids: false, roundRule: 'official',
+  customRounds: { 3:20, 4:15, 5:12, 6:10 },
+  predictions: [], results: [], scores: {}, history: [], savedFinal: false
+};
+const Cfg = { theme: 'dark' };
 
-    const Storage = {
-      save(){ safeLS.set(saveKey, JSON.stringify(S)); },
-      load(){
-        const d = safeLS.get(saveKey);
-        if(!d) return false;
-        try { Object.assign(S, JSON.parse(d)); return true; }
-        catch { return false; }
-      },
-      clear(){ safeLS.remove(saveKey); },
-      saveSettings(){ safeLS.set(settingsKey, JSON.stringify(Settings)); },
-      loadSettings(){
-        const d = safeLS.get(settingsKey);
-        if(d){ try { Object.assign(Settings, JSON.parse(d)); } catch {} }
-      }
-    };
+/* ── Safe LS ── */
+const LS = {
+  get(k)  { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k,v){ try { localStorage.setItem(k, v); } catch {} },
+  del(k)  { try { localStorage.removeItem(k); } catch {} }
+};
 
-    /* ---------- Save-Erkennung/Normalisierung (NEU) ---------- */
-    function looksLikeWizardSave(e){
-      return !!e && (
-        e.gameId === GAME_ID ||
-        (Array.isArray(e.players) &&
-         Array.isArray(e.predictions) &&
-         Array.isArray(e.results) &&
-         e.scores && typeof e.scores === 'object' &&
-         !('hands' in e) && !('points' in e)) // grenzt Rummikub aus
-      );
-    }
-    function normalizeSave(e){
-      if(!e) return null;
-      if(e.gameId && e.gameId !== GAME_ID) return null;
-      if(!looksLikeWizardSave(e)) return null;
-      return { ...e, gameId: GAME_ID, schema: (e.schema ?? SAVE_SCHEMA) };
-    }
+/* ── Storage ── */
+const Storage = {
+  save()  { LS.set(KEY_STATE, JSON.stringify(S)); },
+  load()  { const d=LS.get(KEY_STATE); if(!d) return false; try { Object.assign(S, JSON.parse(d)); return true; } catch { return false; } },
+  clear() { LS.del(KEY_STATE); },
+  saveCfg(){ LS.set(KEY_SETTINGS, JSON.stringify(Cfg)); },
+  loadCfg(){ const d=LS.get(KEY_SETTINGS); if(d) try { Object.assign(Cfg, JSON.parse(d)); } catch {} }
+};
 
-    /* ---------- Saves (global, nur Wizard gefiltert) ---------- */
-    const Saves = {
-      all(){
-        const rawGlobal = safeLS.get(GLOBAL_SAVES_KEY);
-        const globalArr = rawGlobal ? JSON.parse(rawGlobal) : [];
+/* ── Saves ── */
+function isWizard(e) {
+  return !!e && (e.gameId === GAME_ID ||
+    (Array.isArray(e.players) && Array.isArray(e.predictions) &&
+     Array.isArray(e.results) && e.scores && !('hands' in e)));
+}
+function normSave(e) {
+  if (!e || (e.gameId && e.gameId !== GAME_ID) || !isWizard(e)) return null;
+  return { ...e, gameId: GAME_ID, schema: e.schema ?? 1 };
+}
 
-        // Aus dem globalen Container nur Wizard-Einträge ziehen/normalisieren
-        let wiz = globalArr.map(normalizeSave).filter(Boolean);
-
-        // MIGRATION: alte lokale Liste -> in globalen Container überführen
-        const legacyRaw = safeLS.get(savesKey);
-        if (legacyRaw) {
-          let legacy = [];
-          try { legacy = JSON.parse(legacyRaw); } catch {}
-          const legacyNorm = (Array.isArray(legacy) ? legacy : [])
-            .map(x => normalizeSave({ ...x, gameId: GAME_ID, schema: SAVE_SCHEMA }))
-            .filter(Boolean);
-
-          if (legacyNorm.length) {
-            // alles Nicht-Wizard im globalen Container bewahren (auch ohne gameId)
-            const others = globalArr.filter(x => !looksLikeWizardSave(x));
-            // zusammenführen + deduplizieren nach id/ts
-            const seen = new Set();
-            const mergedWiz = [...legacyNorm, ...wiz].filter(x => {
-              const k = x.id || (x.ts ? 'ts_'+x.ts : JSON.stringify(x.players||[]));
-              if (seen.has(k)) return false;
-              seen.add(k); return true;
-            });
-            safeLS.set(GLOBAL_SAVES_KEY, JSON.stringify([...mergedWiz, ...others]));
-            safeLS.remove(savesKey); // Legacy-Key leeren
-            wiz = mergedWiz;
-          }
-        }
-        return wiz;
-      },
-
-      writeWizardList(list){
-        const raw = safeLS.get(GLOBAL_SAVES_KEY);
-        const all = raw ? JSON.parse(raw) : [];
-        // bewahre alles, was NICHT nach Wizard aussieht
-        const others = all.filter(x => !looksLikeWizardSave(x));
-        safeLS.set(GLOBAL_SAVES_KEY, JSON.stringify([...list, ...others]));
-      },
-
-      add(e){
-        const entry = normalizeSave({ ...e, gameId: GAME_ID, schema: SAVE_SCHEMA });
-        const a = this.all();
-        a.unshift(entry);
-        this.writeWizardList(a);
-        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
-      },
-
-      remove(id){
-        const a = this.all().filter(x => x.id !== id);
-        this.writeWizardList(a);
-        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
-      },
-
-      exportJSON(){
-        const blob = new Blob([JSON.stringify(this.all(),null,2)],{type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'wizard_saves.json'; a.click();
-        URL.revokeObjectURL(url);
-      },
-
-      importJSON(){
-        const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json';
-        inp.onchange=()=>{ const f=inp.files[0]; if(!f) return; const r=new FileReader();
-          r.onload=()=>{ try{
-              const incoming = JSON.parse(r.result);
-              const valid = (Array.isArray(incoming)? incoming:[]).map(normalizeSave).filter(Boolean);
-              const merged = [...valid, ...this.all()];
-              const seen = new Set();
-              const deduped = merged.filter(x=>{
-                const k = x.id || (x.ts ? 'ts_'+x.ts : JSON.stringify(x.players||[]));
-                if(seen.has(k)) return false; seen.add(k); return true;
-              });
-              this.writeWizardList(deduped);
-              UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
-              alert(`Import: ${valid.length} gültige Wizard-Spielstände übernommen.`);
-            } catch { alert('Ungültige Datei.'); } };
-          r.readAsText(f);
-        };
-        inp.click();
-      },
-
-      saveFinished(silent=false){
-        const entry={ id:'g_'+Date.now(), ts:new Date().toISOString(),
-          gameId: GAME_ID, schema: SAVE_SCHEMA,
-          players:[...S.players],
-          mode:S.mode, hiddenBids:S.hiddenBids,
-          rounds:S.maxRounds, scores:{...S.scores},
-          predictions:S.predictions, results:S.results,
-          summary:Analytics.computeSummary()
-        };
-        const a=this.all(); a.unshift(entry); this.writeWizardList(a);
-        UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
-        if(!silent) alert('Spielstand gespeichert.');
-      }
-    };
-
-    /* ---------- Rules & scoring ---------- */
-    const roundsForPlayers = n => Math.floor(60/n);
-    const pointsFor = (pred,got)=> pred===got? (20+10*got) : (-10*Math.abs(pred-got));
-    function computeMaxRounds(){ return (S.roundRule==='official')? roundsForPlayers(S.players.length) : (S.customRounds[S.players.length]||roundsForPlayers(S.players.length)); }
-    function recalcScores(){
-      S.players.forEach(p=>S.scores[p]=0);
-      for(let i=0;i<S.predictions.length;i++){
-        const P=S.predictions[i]||{}, R=S.results[i]||{};
-        if(Object.keys(P).length<S.players.length) continue;
-        if(Object.keys(R).length<S.players.length) continue;
-        S.players.forEach(pl=>{ S.scores[pl]+=pointsFor(P[pl]??0,R[pl]??0); });
-      }
-    }
-
-    /* ---------- Analytics helpers ---------- */
-    const Analytics = {
-      perRoundTotalsGeneric(players,predictions,results){
-        const totals=players.map(()=>[]), acc=players.map(()=>0);
-        for(let i=0;i<predictions.length;i++){
-          const P=predictions[i]||{}, R=results[i]||{};
-          const full=(Object.keys(P).length===players.length && Object.keys(R).length===players.length);
-          players.forEach((pl,pi)=>{ if(full){ acc[pi]+=pointsFor(P[pl]??0,R[pl]??0);} totals[pi].push(acc[pi]); });
-        }
-        return totals;
-      },
-      perRoundTotals(){ return this.perRoundTotalsGeneric(S.players,S.predictions,S.results); },
-      correctCountsGeneric(players,predictions,results){
-        const m=Object.fromEntries(players.map(p=>[p,0]));
-        for(let i=0;i<predictions.length;i++){
-          const P=predictions[i]||{}, R=results[i]||{};
-          if(Object.keys(P).length<players.length || Object.keys(R).length<players.length) continue;
-          players.forEach(pl=>{ if((P[pl]??-1)===(R[pl]??-2)) m[pl]++; });
-        } return m;
-      },
-      correctCounts(){ return this.correctCountsGeneric(S.players,S.predictions,S.results); },
-      extremesGeneric(players,predictions,results){
-        const maxTricks=Object.fromEntries(players.map(p=>[p,0])), maxDev=Object.fromEntries(players.map(p=>[p,0]));
-        for(let i=0;i<results.length;i++){ const P=predictions[i]||{}, R=results[i]||{};
-          players.forEach(pl=>{ const r=R[pl]; const g=P[pl];
-            if(r!=null && r>maxTricks[pl]) maxTricks[pl]=r;
-            if(r!=null && g!=null){ const d=Math.abs(r-g); if(d>maxDev[pl]) maxDev[pl]=d; }
-          });
-        } return {maxTricks,maxDev};
-      },
-      extremes(){ return this.extremesGeneric(S.players,S.predictions,S.results); },
-      accuracy(){
-        const corr=this.correctCounts(); const totals=Object.fromEntries(S.players.map(p=>[p,0]));
-        for(let i=0;i<S.predictions.length;i++){
-          const P=S.predictions[i]||{}, R=S.results[i]||{};
-          if(Object.keys(P).length<S.players.length || Object.keys(R).length<S.players.length) continue;
-          S.players.forEach(p=>totals[p]++);
-        }
-        const pct=Object.fromEntries(S.players.map(p=>[p, totals[p]? Math.round((corr[p]/totals[p])*100):0 ]));
-        return pct;
-      },
-      computeSummary(){
-        const corr=this.correctCounts(); const acc=this.accuracy(); const ex=this.extremes();
-        let bestScore=-Infinity,bestPlayers=[];
-        S.players.forEach(p=>{ if(S.scores[p]>bestScore){bestScore=S.scores[p];bestPlayers=[p]} else if(S.scores[p]===bestScore){bestPlayers.push(p)} });
-        return {bestPlayers,bestScore,correct:corr,accuracy:acc,extremes:ex};
-      }
-    };
-
-    function ensureSummaryFromEntry(e){
-      if(e.summary) return e.summary;
-      const players = e.players||[];
-      const predictions = e.predictions||[];
-      const results = e.results||[];
-      // correct counts
-      const correct = Analytics.correctCountsGeneric(players,predictions,results);
-      // accuracy
-      const totals=Object.fromEntries(players.map(p=>[p,0]));
-      for(let i=0;i<predictions.length;i++){
-        const P=predictions[i]||{}, R=results[i]||{};
-        if(Object.keys(P).length===players.length && Object.keys(R).length===players.length) players.forEach(p=>totals[p]++);
-      }
-      const accuracy=Object.fromEntries(players.map(p=>[p, totals[p]? Math.round((correct[p]/totals[p])*100):0]));
-      const ex=Analytics.extremesGeneric(players,predictions,results);
-      let best=-Infinity,bp=[]; players.forEach(p=>{ const s=(e.scores||{})[p]||0; if(s>best){best=s;bp=[p]} else if(s===best){bp.push(p)} });
-      return {bestPlayers:bp, bestScore:best, correct, accuracy, extremes:ex};
-    }
-
-    function globalAggregates(){
-      const arr = Saves.all(); // nur Wizard
-      const wins = {}, games = {}, sumScore = {}, bestScore = {}, sumAccuracy = {}, accCount = {}, maxTricks = {}, maxDev = {};
-      const inc = (m,k,v=1)=>{ m[k]=(m[k]||0)+v; };
-      const setMax = (m,k,v)=>{ m[k]=Math.max(m[k]||0, v||0); };
-
-      arr.forEach(e=>{
-        const players=e.players||[], scores=e.scores||{}, sum=ensureSummaryFromEntry(e);
-        (sum.bestPlayers||[]).forEach(p=> inc(wins,p,1));
-        players.forEach(p=>{
-          inc(games,p,1);
-          inc(sumScore,p, scores[p]||0);
-          setMax(bestScore,p, scores[p]||0);
-          const acc = (sum.accuracy && typeof sum.accuracy[p]==='number') ? sum.accuracy[p] : 0;
-          inc(sumAccuracy,p, acc); inc(accCount,p, acc?1:0);
-          if(sum.extremes){
-            setMax(maxTricks,p, (sum.extremes.maxTricks||{})[p]||0);
-            setMax(maxDev,p, (sum.extremes.maxDev||{})[p]||0);
-          }
+const Saves = {
+  all() {
+    let global = [];
+    try { global = JSON.parse(LS.get(KEY_GLOBAL) || '[]'); } catch {}
+    let wiz = global.map(normSave).filter(Boolean);
+    // migration
+    try {
+      const leg = JSON.parse(LS.get(KEY_LEGACY) || '[]');
+      if (leg.length) {
+        const legN = leg.map(x => normSave({...x, gameId:GAME_ID})).filter(Boolean);
+        const others = global.filter(x => !isWizard(x));
+        const seen = new Set();
+        wiz = [...legN, ...wiz].filter(x => {
+          const k = x.id || x.ts || JSON.stringify(x.players);
+          return seen.has(k) ? false : (seen.add(k), true);
         });
+        LS.set(KEY_GLOBAL, JSON.stringify([...wiz, ...others]));
+        LS.del(KEY_LEGACY);
+      }
+    } catch {}
+    return wiz;
+  },
+  write(list) {
+    let global = [];
+    try { global = JSON.parse(LS.get(KEY_GLOBAL) || '[]'); } catch {}
+    const others = global.filter(x => !isWizard(x));
+    LS.set(KEY_GLOBAL, JSON.stringify([...list, ...others]));
+  },
+  add(e) {
+    const entry = normSave({...e, gameId:GAME_ID, schema:1});
+    const a = this.all(); a.unshift(entry); this.write(a);
+    UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+  },
+  remove(id) {
+    this.write(this.all().filter(x => x.id !== id));
+    UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+  },
+  saveFinished() {
+    if (S.savedFinal) return;
+    const entry = {
+      id: 'g_' + Date.now(), ts: new Date().toISOString(),
+      gameId: GAME_ID, schema: 1,
+      players: [...S.players], mode: S.mode, hiddenBids: S.hiddenBids,
+      rounds: S.maxRounds, scores: {...S.scores},
+      predictions: S.predictions, results: S.results,
+      summary: Analytics.summary()
+    };
+    this.add(entry);
+    S.savedFinal = true; Storage.save();
+  },
+  exportJSON() {
+    const blob = new Blob([JSON.stringify(this.all(), null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='wizard_saves.json'; a.click();
+    URL.revokeObjectURL(url);
+  },
+  importJSON() {
+    const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
+    inp.onchange = () => {
+      const f = inp.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const arr = JSON.parse(r.result);
+          const valid = (Array.isArray(arr)?arr:[]).map(normSave).filter(Boolean);
+          const merged = [...valid, ...this.all()];
+          const seen = new Set();
+          this.write(merged.filter(x => { const k=x.id||x.ts; return seen.has(k)?false:(seen.add(k),true); }));
+          UI.renderSaves(); UI.renderSavesHome(); UI.updateGlobalCharts();
+          UI.toast(`${valid.length} Spiele importiert.`);
+        } catch { UI.toast('Ungültige Datei.'); }
+      };
+      r.readAsText(f);
+    };
+    inp.click();
+  }
+};
+
+/* ── Rules / Scoring ── */
+const roundsFor = n => Math.floor(60 / n);
+const pointsFor = (pred, got) => pred === got ? (20 + 10 * got) : (-10 * Math.abs(pred - got));
+function computeMaxRounds() {
+  return S.roundRule === 'official' ? roundsFor(S.players.length) : (S.customRounds[S.players.length] || roundsFor(S.players.length));
+}
+function recalcScores() {
+  S.players.forEach(p => S.scores[p] = 0);
+  for (let i = 0; i < S.predictions.length; i++) {
+    const P = S.predictions[i]||{}, R = S.results[i]||{};
+    if (Object.keys(P).length < S.players.length || Object.keys(R).length < S.players.length) continue;
+    S.players.forEach(pl => S.scores[pl] += pointsFor(P[pl]??0, R[pl]??0));
+  }
+}
+
+/* ── Analytics ── */
+const Analytics = {
+  perRoundTotals(players, preds, results) {
+    const totals = players.map(() => []), acc = players.map(() => 0);
+    for (let i = 0; i < preds.length; i++) {
+      const P = preds[i]||{}, R = results[i]||{};
+      const full = Object.keys(P).length===players.length && Object.keys(R).length===players.length;
+      players.forEach((pl,pi) => { if(full) acc[pi] += pointsFor(P[pl]??0, R[pl]??0); totals[pi].push(acc[pi]); });
+    }
+    return totals;
+  },
+  correctCounts(players, preds, results) {
+    const m = Object.fromEntries(players.map(p=>[p,0]));
+    for (let i = 0; i < preds.length; i++) {
+      const P = preds[i]||{}, R = results[i]||{};
+      if (Object.keys(P).length<players.length||Object.keys(R).length<players.length) continue;
+      players.forEach(pl => { if ((P[pl]??-1)===(R[pl]??-2)) m[pl]++; });
+    }
+    return m;
+  },
+  extremes(players, preds, results) {
+    const maxT = Object.fromEntries(players.map(p=>[p,0]));
+    const maxD = Object.fromEntries(players.map(p=>[p,0]));
+    for (let i = 0; i < results.length; i++) {
+      const P = preds[i]||{}, R = results[i]||{};
+      players.forEach(pl => {
+        const r=R[pl], g=P[pl];
+        if (r!=null && r>maxT[pl]) maxT[pl]=r;
+        if (r!=null && g!=null) { const d=Math.abs(r-g); if(d>maxD[pl]) maxD[pl]=d; }
       });
+    }
+    return { maxT, maxD };
+  },
+  accuracy(players, preds, results) {
+    const corr = this.correctCounts(players, preds, results);
+    const totals = Object.fromEntries(players.map(p=>[p,0]));
+    for (let i = 0; i < preds.length; i++) {
+      const P=preds[i]||{}, R=results[i]||{};
+      if (Object.keys(P).length===players.length && Object.keys(R).length===players.length) players.forEach(p=>totals[p]++);
+    }
+    return Object.fromEntries(players.map(p => [p, totals[p] ? Math.round(corr[p]/totals[p]*100) : 0]));
+  },
+  summary() {
+    const corr = this.correctCounts(S.players, S.predictions, S.results);
+    const acc  = this.accuracy(S.players, S.predictions, S.results);
+    const ex   = this.extremes(S.players, S.predictions, S.results);
+    let best = -Infinity, bp = [];
+    S.players.forEach(p => { if(S.scores[p]>best){best=S.scores[p];bp=[p]} else if(S.scores[p]===best) bp.push(p); });
+    return { bestPlayers:bp, bestScore:best, correct:corr, accuracy:acc, extremes:ex };
+  },
+  summaryFromEntry(e) {
+    if (e.summary) return e.summary;
+    const pl=e.players||[], pr=e.predictions||[], rs=e.results||[];
+    const corr=this.correctCounts(pl,pr,rs), acc=this.accuracy(pl,pr,rs), ex=this.extremes(pl,pr,rs);
+    let best=-Infinity,bp=[];
+    pl.forEach(p=>{ const s=(e.scores||{})[p]||0; if(s>best){best=s;bp=[p]} else if(s===best) bp.push(p); });
+    return { bestPlayers:bp, bestScore:best, correct:corr, accuracy:acc, extremes:ex };
+  }
+};
 
-      const players = Object.keys(games).sort((a,b)=>(wins[b]||0)-(wins[a]||0));
-      const avgScore = players.map(p=> games[p]? Math.round((sumScore[p]/games[p])*10)/10 : 0);
-      const best = players.map(p=> bestScore[p]||0);
-      const winVals = players.map(p=> wins[p]||0);
-      const avgAcc = players.map(p=> (accCount[p]? Math.round(sumAccuracy[p]/accCount[p]) : 0));
-      const maxT = players.map(p=> maxTricks[p]||0);
-      const maxD = players.map(p=> maxDev[p]||0);
+/* ── Global aggregates ── */
+function globalAgg() {
+  const arr = Saves.all();
+  const wins={},games={},sumS={},bestS={},sumA={},accC={},maxT={},maxD={};
+  const inc=(m,k,v=1)=>{m[k]=(m[k]||0)+v;};
+  const setMax=(m,k,v)=>{m[k]=Math.max(m[k]||0,v||0);};
+  arr.forEach(e => {
+    const pl=e.players||[], sc=e.scores||{}, sum=Analytics.summaryFromEntry(e);
+    (sum.bestPlayers||[]).forEach(p=>inc(wins,p));
+    pl.forEach(p => {
+      inc(games,p); inc(sumS,p,sc[p]||0); setMax(bestS,p,sc[p]||0);
+      const a=(sum.accuracy&&typeof sum.accuracy[p]==='number')?sum.accuracy[p]:0;
+      inc(sumA,p,a); inc(accC,p,a?1:0);
+      if(sum.extremes){ setMax(maxT,p,(sum.extremes.maxT||{})[p]||0); setMax(maxD,p,(sum.extremes.maxD||{})[p]||0); }
+    });
+  });
+  const pl = Object.keys(games).sort((a,b)=>(wins[b]||0)-(wins[a]||0));
+  return {
+    players: pl, totalGames: arr.length,
+    winVals:  pl.map(p=>wins[p]||0),
+    avgScore: pl.map(p=>games[p]?Math.round(sumS[p]/games[p]*10)/10:0),
+    best:     pl.map(p=>bestS[p]||0),
+    avgAcc:   pl.map(p=>accC[p]?Math.round(sumA[p]/accC[p]):0),
+    maxT:     pl.map(p=>maxT[p]||0),
+    maxD:     pl.map(p=>maxD[p]||0)
+  };
+}
 
-      return {players, winVals, avgScore, best, avgAcc, maxT, maxD, totalGames: arr.length};
+/* ── Chart helpers ── */
+const COLORS = ['#7c6fff','#2dd4bf','#f5c842','#f87171','#4ade80','#fb923c','#a78bfa','#38bdf8'];
+let charts = {};
+function mkChart(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  const el = document.getElementById(id); if(!el) return null;
+  charts[id] = new Chart(el, cfg); return charts[id];
+}
+function defOpts(extra={}) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { color: '#8b93b8', font:{size:11}, boxWidth:12 } } },
+    scales: { x: { ticks:{color:'#8b93b8',font:{size:10}}, grid:{color:'rgba(255,255,255,0.05)'} },
+              y: { ticks:{color:'#8b93b8',font:{size:10}}, grid:{color:'rgba(255,255,255,0.05)'} } },
+    ...extra
+  };
+}
+function barDatasets(labels, data, label='') {
+  return { labels, datasets: [{ label, data, backgroundColor: COLORS.slice(0, data.length), borderRadius: 6 }] };
+}
+
+/* ── Views ── */
+const VIEWS = ['setup','game','analytics','history','rules','settings'];
+function showView(v) {
+  VIEWS.forEach(x => {
+    const el = $('#view-'+x); if(el) el.classList.toggle('active', x===v);
+  });
+  $$('.nav-btn[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav===v));
+  if (v==='analytics') { UI.updateCharts(); UI.updateGlobalCharts(); }
+  if (v==='history')   { UI.renderSaves(); }
+  if (v==='setup')     { UI.renderSavesHome(); }
+}
+
+/* ── UI ── */
+const UI = {
+  init() {
+    $('#yearSpan').textContent = new Date().getFullYear();
+    Storage.loadCfg();
+    this.applyTheme();
+
+    // Player inputs
+    this.buildPlayerInputs();
+
+    // Nav
+    $$('[data-nav]').forEach(btn => btn.addEventListener('click', () => {
+      const v = btn.dataset.nav;
+      showView(v);
+      if (v==='analytics') { $('#btnAnaCurrent').click(); }
+      this.closeSidebar();
+    }));
+
+    // Mobile menu
+    $('#menuBtn').addEventListener('click', () => this.toggleSidebar());
+    $('#shade').addEventListener('click', () => this.closeSidebar());
+
+    // Seg controls
+    this.makeSeg('#segMode', v => S.mode = v);
+    this.makeSeg('#segRounds', v => {
+      S.roundRule = v;
+      $('#customRoundsWrap').classList.toggle('hidden', v !== 'custom');
+    });
+
+    // Actions
+    $('#btnStart').onclick    = Handlers.start;
+    $('#btnLoad').onclick     = Handlers.load;
+    $('#btnReset').onclick    = Handlers.reset;
+    $('#btnEnd').onclick      = () => Handlers.end(false);
+    $('#btnRedoRound').onclick = Handlers.redoRound;
+    $('#btnHome').onclick     = () => { location.href='https://pascalasch.github.io/Spiele/Overview.html'; };
+    $('#btnSdClose').onclick  = () => this.closeDetail();
+    $('#detailOverlay').addEventListener('click', e => { if(e.target.id==='detailOverlay') this.closeDetail(); });
+
+    // Dark mode toggle
+    const td = $('#toggleDark');
+    td.checked = Cfg.theme === 'dark';
+    td.addEventListener('change', e => { Cfg.theme = e.target.checked?'dark':'light'; this.applyTheme(); Storage.saveCfg(); });
+
+    // Analytics tabs
+    $('#btnAnaCurrent').onclick = () => { $('#ana-current').classList.remove('hidden'); $('#ana-global').classList.add('hidden'); $('#btnAnaCurrent').classList.add('active-tab'); $('#btnAnaGlobal').classList.remove('active-tab'); this.updateCharts(); };
+    $('#btnAnaGlobal').onclick  = () => { $('#ana-global').classList.remove('hidden'); $('#ana-current').classList.add('hidden'); $('#btnAnaGlobal').classList.add('active-tab'); $('#btnAnaCurrent').classList.remove('active-tab'); this.updateGlobalCharts(); };
+
+    // Load button visibility
+    if (LS.get(KEY_STATE)) $('#btnLoad').classList.remove('hidden');
+
+    // Touch passive
+    document.addEventListener('touchstart', ()=>{}, {passive:true});
+
+    this.renderSavesHome();
+  },
+
+  buildPlayerInputs() {
+    const c = $('#playerInputs'); c.innerHTML = '';
+    for (let i = 0; i < 2; i++) this.addPlayerInput(c, i+1, '');
+  },
+  addPlayerInput(container, n, val) {
+    const wrap = document.createElement('div');
+    wrap.className = 'player-input-wrap';
+    wrap.setAttribute('data-n', n);
+    const inp = document.createElement('input');
+    inp.className = 'player-input'; inp.type = 'text';
+    inp.placeholder = `Spieler ${n}`; inp.value = val;
+    inp.addEventListener('input', () => this.onPlayerInput(inp));
+    wrap.appendChild(inp); container.appendChild(wrap);
+  },
+  onPlayerInput(inp) {
+    const c = $('#playerInputs');
+    const inputs = $$('#playerInputs .player-input');
+    const last = inputs[inputs.length - 1];
+    if (inp === last && inp.value.trim() !== '' && inputs.length < 6) {
+      this.addPlayerInput(c, inputs.length + 1, '');
+    }
+  },
+
+  makeSeg(id, cb) {
+    $(id).addEventListener('click', e => {
+      if (e.target.tagName !== 'BUTTON') return;
+      $$(id + ' button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      cb(e.target.dataset.val);
+    });
+  },
+
+  applyTheme() {
+    document.documentElement.setAttribute('data-theme', Cfg.theme);
+    const td = $('#toggleDark'); if(td) td.checked = Cfg.theme === 'dark';
+  },
+
+  toggleSidebar() { $('#sidebar').classList.toggle('open'); $('#shade').classList.toggle('visible'); },
+  closeSidebar()  { $('#sidebar').classList.remove('open'); $('#shade').classList.remove('visible'); },
+
+  toast(msg) {
+    const t = $('#toast'), m = $('#toastMsg');
+    m.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  },
+
+  top() {
+    const r = S.round, max = S.maxRounds;
+    $('#roundDisplay').textContent = `${r}/${max}`;
+    const dealer  = S.players[(r-1) % S.players.length] || '–';
+    const starter = S.players[ r    % S.players.length] || '–';
+    const pills = $('#metaPills');
+    pills.innerHTML = `
+      <div class="meta-pill">🃏 <b>${dealer}</b></div>
+      <div class="meta-pill">🎤 <b>${starter}</b></div>
+      <div class="meta-pill">🎯 Stiche: <b>${r}</b></div>`;
+    const isPred = S.step === 'prediction';
+    const badge = $('#phaseBadge');
+    badge.className = 'phase-badge ' + (isPred ? 'pred' : 'res');
+    badge.textContent = isPred ? 'Vorhersage' : 'Ergebnis';
+    $('#phaseHint').textContent = isPred
+      ? (S.hiddenBids ? 'Verdeckte Ansagen – zeigen nach letzter Ansage' : 'Offene Ansagen')
+      : 'Erzielte Stiche eingeben';
+    const cur = S.players[(r + S.stepIndex) % S.players.length] || '–';
+    // Correctly: prediction order starts left of dealer = index r % n; result also starts there
+    const curP = isPred
+      ? S.players[(r % S.players.length + S.stepIndex) % S.players.length] || '–'
+      : S.players[S.stepIndex % S.players.length] || '–';
+    $('#whoPrompt').innerHTML = `${isPred ? 'Wie viele Stiche sagt' : 'Wie viele Stiche hat'} <b>${curP}</b>?`;
+    if (!isPred) {
+      const R = S.results[r-1] || {};
+      const partial = Object.values(R).reduce((a,b) => a+(b||0), 0);
+      const rem = Math.max(r - partial, 0);
+      $('#remainInfo').textContent = `Verbleibende Stiche: ${rem}`;
+    } else { $('#remainInfo').textContent = ''; }
+    $('#inputError').textContent = '';
+    this.liveScores();
+  },
+
+  liveScores() {
+    const box = $('#liveScores'); if(!box) return;
+    const sorted = [...S.players].sort((a,b) => S.scores[b] - S.scores[a]);
+    const topScore = S.scores[sorted[0]] ?? 0;
+    // compute last-round delta
+    const lastR = S.round - (S.step === 'prediction' ? 1 : 0) - 1;
+    box.innerHTML = S.players.map(p => {
+      const pts = S.scores[p] || 0;
+      const isLeader = pts === topScore && topScore !== 0;
+      let delta = '';
+      if (lastR >= 0) {
+        const P=S.predictions[lastR]||{}, R=S.results[lastR]||{};
+        if (Object.keys(P).length===S.players.length && Object.keys(R).length===S.players.length) {
+          const d = pointsFor(P[p]??0, R[p]??0);
+          delta = `<div class="chip-delta ${d>=0?'pos':'neg'}">${fmt(d)}</div>`;
+        }
+      }
+      return `<div class="score-chip ${isLeader?'leader':''}">
+        <div class="chip-name">${p}</div>
+        <div class="chip-pts">${pts}</div>
+        ${delta}
+      </div>`;
+    }).join('');
+  },
+
+  renderRoundHistory() {
+    const box = $('#roundHistory'); if(!box) return;
+    box.innerHTML = '';
+    for (let i = S.predictions.length - 1; i >= 0; i--) {
+      const P = S.predictions[i]||{}, R = S.results[i]||{};
+      const allR = Object.keys(R).length === S.players.length;
+      const wrap = document.createElement('div'); wrap.className = 'round-row';
+
+      if (Object.keys(P).length > 0) {
+        const tipRow = document.createElement('div'); tipRow.className = 'round-row-tip';
+        const showBids = !(S.hiddenBids && i===S.round-1 && S.step==='prediction' && Object.keys(P).length<S.players.length);
+        const canDel = !allR;
+        tipRow.innerHTML = `<span class="rr-label">R${i+1} Tipp</span>` +
+          S.players.map(pl => {
+            const v = P[pl]; const show = showBids;
+            return `<div class="rr-player"><div class="rr-name">${pl}</div><div class="rr-val">${v!=null && show ? v : (v!=null ? '<span class="hidden-dot">•</span>' : '–')}</div></div>`;
+          }).join('') +
+          (canDel ? `<div class="rr-actions"><button class="rr-del" onclick="Handlers.delPred(${i})">✕ Tipps</button></div>` : '');
+        wrap.appendChild(tipRow);
+      }
+
+      if (allR) {
+        const resRow = document.createElement('div'); resRow.className = 'round-row-res';
+        resRow.innerHTML = `<span class="rr-label">R${i+1} Erg.</span>` +
+          S.players.map(pl => {
+            const r=R[pl], pred=P[pl]??0, pts=pointsFor(pred, r);
+            return `<div class="rr-player"><div class="rr-name">${pl}</div><div class="rr-val">${r}</div><div class="rr-pts ${pts>=0?'pos':'neg'}">${fmt(pts)}</div></div>`;
+          }).join('') +
+          `<div class="rr-actions"><button class="rr-del" onclick="Handlers.delRes(${i})">✕ Erg.</button></div>`;
+        wrap.appendChild(resRow);
+      }
+
+      box.appendChild(wrap);
+    }
+  },
+
+  updateCharts() {
+    const hasPl = S.players.length >= 2;
+    const hasData = S.predictions.some(p=>Object.keys(p||{}).length>0);
+    if (!hasPl || !hasData) {
+      ['chartPoints','chartCorrect','chartAccuracy','chartExtremes'].forEach(id => {
+        const el = document.getElementById(id); if(el) { const ctx=el.getContext('2d'); ctx.clearRect(0,0,el.width,el.height); }
+      });
+      return;
+    }
+    const labels = S.predictions.map((_,i)=>`R${i+1}`);
+    const totals = Analytics.perRoundTotals(S.players, S.predictions, S.results);
+    mkChart('chartPoints', { type:'line', data:{ labels, datasets: totals.map((arr,i)=>({ label:S.players[i], data:arr, borderColor:COLORS[i], backgroundColor:'transparent', tension:.3, pointRadius:3 })) }, options: defOpts({plugins:{legend:{position:'bottom',labels:{color:'#8b93b8',font:{size:11},boxWidth:10}}}}) });
+
+    const corr = Analytics.correctCounts(S.players, S.predictions, S.results);
+    mkChart('chartCorrect', { type:'bar', data: barDatasets(S.players, S.players.map(p=>corr[p]), 'Korrekte Tipps'), options: defOpts({plugins:{legend:{display:false}}}) });
+
+    const acc = Analytics.accuracy(S.players, S.predictions, S.results);
+    mkChart('chartAccuracy', { type:'radar', data:{ labels:S.players, datasets:[{label:'%', data:S.players.map(p=>acc[p]), backgroundColor:'rgba(124,111,255,0.2)', borderColor:COLORS[0], pointBackgroundColor:COLORS[0]}] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ r:{ beginAtZero:true, max:100, ticks:{color:'#8b93b8',font:{size:10}}, grid:{color:'rgba(255,255,255,0.08)'}, pointLabels:{color:'#8b93b8',font:{size:11}} } }, plugins:{legend:{display:false}} } });
+
+    const ex = Analytics.extremes(S.players, S.predictions, S.results);
+    mkChart('chartExtremes', { type:'bar', data:{ labels:S.players, datasets:[{label:'Max. Stiche',data:S.players.map(p=>ex.maxT[p]),backgroundColor:COLORS[0],borderRadius:6},{label:'Max. Abweichung',data:S.players.map(p=>ex.maxD[p]),backgroundColor:COLORS[2],borderRadius:6}] }, options: defOpts() });
+  },
+
+  updateGlobalCharts() {
+    const agg = globalAgg();
+    if (!agg.players.length) return;
+    const pl = agg.players.slice(0,16);
+    const pick = arr => pl.map(p => arr[agg.players.indexOf(p)]);
+    mkChart('gaWins',     { type:'bar', data: barDatasets(pl, pick(agg.winVals), 'Siege'), options: defOpts({plugins:{legend:{display:false},title:{display:true,text:`${agg.totalGames} Spiele`,color:'#8b93b8',font:{size:11}}}}) });
+    mkChart('gaAvgScore', { type:'bar', data: barDatasets(pl, pick(agg.avgScore), 'Ø Punkte'), options: defOpts({plugins:{legend:{display:false}}}) });
+    mkChart('gaBestScore',{ type:'bar', data: barDatasets(pl, pick(agg.best), 'Highscore'), options: defOpts({plugins:{legend:{display:false}}}) });
+    mkChart('gaAccuracy', { type:'bar', data: barDatasets(pl, pick(agg.avgAcc), 'Ø Treffer%'), options: defOpts({plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,ticks:{color:'#8b93b8'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#8b93b8'},grid:{color:'rgba(255,255,255,0.05)'}}}}) });
+    mkChart('gaExtremes', { type:'bar', data:{ labels:pl, datasets:[{label:'Max.Stiche',data:pick(agg.maxT),backgroundColor:COLORS[0],borderRadius:6},{label:'Max.Abw.',data:pick(agg.maxD),backgroundColor:COLORS[2],borderRadius:6}] }, options: defOpts() });
+  },
+
+  renderSaves() {
+    const box = $('#savesList'); const arr = Saves.all();
+    if (!arr.length) { box.innerHTML = '<div class="info" style="padding:16px">Keine gespeicherten Spiele.</div>'; return; }
+    box.innerHTML = arr.map(e => {
+      const date = new Date(e.ts).toLocaleString('de-DE');
+      const rank = Object.entries(e.scores||{}).sort((a,b)=>b[1]-a[1]);
+      const winner = rank.length ? rank.filter(x=>x[1]===rank[0][1]).map(x=>x[0]).join(' & ') : '–';
+      return `<div class="save-card">
+        <div class="save-meta">${date} · ${e.players.length} Sp · ${e.rounds} Runden · ${e.mode}${e.hiddenBids?' · Hidden':''}</div>
+        <div class="save-winner">👑 ${winner} ${rank.length?`(${rank[0][1]} Pkt)`:''}</div>
+        <div class="save-scores">${e.players.map(p=>`${p}: ${e.scores?.[p]??0}`).join(' · ')}</div>
+        <div class="save-actions">
+          <button class="btn btn-ghost btn-sm" onclick="UI.openDetail('${e.id}')">🔎 Details</button>
+          <button class="btn btn-danger btn-sm" onclick="Saves.remove('${e.id}')">🗑 Löschen</button>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  renderSavesHome() {
+    const box = $('#savesListHome'); if(!box) return;
+    const arr = Saves.all().slice(0,3);
+    if (!arr.length) { box.innerHTML = '<div class="info">Noch keine Spielstände.</div>'; return; }
+    box.innerHTML = arr.map(e => {
+      const date = new Date(e.ts).toLocaleDateString('de-DE');
+      const rank = Object.entries(e.scores||{}).sort((a,b)=>b[1]-a[1]);
+      return `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; font-size:13px;">
+        <span style="color:var(--gold)">👑 ${rank[0]?.[0]||'–'}</span>
+        <span style="color:var(--text2)">${rank[0]?.[1]??''} Pkt</span>
+        <span style="margin-left:auto; color:var(--text3)">${date}</span>
+      </div>`;
+    }).join('');
+  },
+
+  openDetail(id) {
+    const e = Saves.all().find(x=>x.id===id); if(!e) return;
+    $('#sdTitle').textContent = `Spiel – ${e.players.join(', ')}`;
+    $('#sdMeta').textContent  = new Date(e.ts).toLocaleString('de-DE') + ` · ${e.players.length} Sp · ${e.rounds} Rdn · ${e.mode}`;
+    const labels = (e.predictions||[]).map((_,i)=>`R${i+1}`);
+    const totals = Analytics.perRoundTotals(e.players, e.predictions||[], e.results||[]);
+    mkChart('sdPoints',  { type:'line', data:{ labels, datasets: totals.map((arr,i)=>({ label:e.players[i], data:arr, borderColor:COLORS[i], backgroundColor:'transparent', tension:.3, pointRadius:3 })) }, options: defOpts({plugins:{legend:{position:'bottom',labels:{color:'#8b93b8',font:{size:10},boxWidth:10}}}}) });
+    const rank = Object.entries(e.scores||{}).sort((a,b)=>b[1]-a[1]);
+    mkChart('sdScores',  { type:'bar', data: barDatasets(rank.map(x=>x[0]), rank.map(x=>x[1]), 'Punkte'), options: defOpts({plugins:{legend:{display:false}}}) });
+    const sum = Analytics.summaryFromEntry(e);
+    mkChart('sdCorrect', { type:'bar', data: barDatasets(e.players, e.players.map(p=>(sum.correct||{})[p]||0), 'Korrekte Tipps'), options: defOpts({plugins:{legend:{display:false}}}) });
+    const ex = sum.extremes||{maxT:{},maxD:{}};
+    mkChart('sdExtremes',{ type:'bar', data:{ labels:e.players, datasets:[{label:'Max.Stiche',data:e.players.map(p=>ex.maxT?.[p]||0),backgroundColor:COLORS[0],borderRadius:6},{label:'Max.Abw.',data:e.players.map(p=>ex.maxD?.[p]||0),backgroundColor:COLORS[2],borderRadius:6}] }, options: defOpts() });
+    $('#detailOverlay').classList.add('visible');
+  },
+  closeDetail() { $('#detailOverlay').classList.remove('visible'); },
+
+  showEnd() {
+    const scores = S.scores;
+    let max=-Infinity, winners=[];
+    S.players.forEach(p=>{ if(scores[p]>max){max=scores[p];winners=[p]} else if(scores[p]===max) winners.push(p); });
+    $('#winnerName').textContent = winners.join(' & ');
+    $('#winnerPts').textContent  = `${max} Punkte`;
+    // stats
+    let totalRounds=0, totalCorr=0, totalAttempts=0;
+    S.players.forEach(p=>{ totalCorr+=Analytics.correctCounts(S.players,S.predictions,S.results)[p]||0; });
+    for(let i=0;i<S.predictions.length;i++){
+      const P=S.predictions[i]||{},R=S.results[i]||{};
+      if(Object.keys(P).length===S.players.length&&Object.keys(R).length===S.players.length){totalRounds++;totalAttempts+=S.players.length;}
+    }
+    const acc = totalAttempts ? Math.round(totalCorr/totalAttempts*100) : 0;
+    const totalPts = Object.values(S.scores).reduce((a,b)=>a+b,0);
+    $('#endStats').innerHTML = `
+      <div class="stat-box"><div class="stat-val">${totalRounds}</div><div class="stat-lbl">Runden gespielt</div></div>
+      <div class="stat-box"><div class="stat-val">${acc}%</div><div class="stat-lbl">Ø Trefferquote</div></div>
+      <div class="stat-box"><div class="stat-val">${totalPts}</div><div class="stat-lbl">Gesamtpunkte</div></div>
+      <div class="stat-box"><div class="stat-val">${S.players.length}</div><div class="stat-lbl">Spieler</div></div>`;
+    // charts
+    const labels = S.predictions.map((_,i)=>`R${i+1}`);
+    const totals = Analytics.perRoundTotals(S.players, S.predictions, S.results);
+    mkChart('endC1', { type:'line', data:{ labels, datasets: totals.map((arr,i)=>({ label:S.players[i], data:arr, borderColor:COLORS[i], backgroundColor:'transparent', tension:.3, pointRadius:3 })) }, options: defOpts({plugins:{legend:{position:'bottom',labels:{color:'#8b93b8',font:{size:10},boxWidth:10}}}}) });
+    const rank = Object.entries(S.scores).sort((a,b)=>b[1]-a[1]);
+    mkChart('endC2', { type:'bar', data: barDatasets(rank.map(x=>x[0]), rank.map(x=>x[1]), 'Punkte'), options: defOpts({plugins:{legend:{display:false}}}) });
+    $('#endOverlay').classList.add('visible');
+  },
+
+  csv() {
+    const rows = [['Runde',...S.players.map(p=>`${p} (Tipp)`),...S.players.map(p=>`${p} (Erg.)`)]];
+    for(let i=0;i<S.predictions.length;i++){
+      const P=S.predictions[i]||{},R=S.results[i]||{};
+      rows.push([i+1,...S.players.map(p=>P[p]??''),...S.players.map(p=>R[p]??'')]);
+    }
+    const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='wizard_scores.csv'; a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  restart() { Storage.clear(); location.reload(); }
+};
+
+/* ── Game ── */
+const Game = {
+  buf: '',
+  d(x) {
+    if (this.buf.length < 2) {
+      this.buf += x;
+      const nd = $('#numberDisplay');
+      nd.textContent = this.buf || '0';
+      nd.classList.add('pulse');
+      setTimeout(() => nd.classList.remove('pulse'), 80);
+    }
+  },
+  cl() { this.buf=''; $('#numberDisplay').textContent='0'; },
+  ok() {
+    const val = parseInt(this.buf || '0', 10);
+    const r = S.round;
+
+    if (S.step === 'prediction') {
+      // Who is currently predicting: starts left of dealer = index r % n, then stepIndex offset
+      const idx = (r % S.players.length + S.stepIndex) % S.players.length;
+      const player = S.players[idx];
+
+      if (val > r) {
+        const m = `❌ Max. ${r} Stiche in Runde ${r}.`;
+        $('#inputError').textContent = m; UI.toast(m); this.cl(); return;
+      }
+
+      if (!S.predictions[r-1]) S.predictions[r-1] = {};
+      S.predictions[r-1][player] = val;
+
+      const P = S.predictions[r-1];
+      const sum = Object.values(P).reduce((a,b)=>a+b,0);
+      const isLast = S.stepIndex === S.players.length - 1;
+
+      // Plus/Minus mode: last player cannot make sum === round
+      if (S.mode === 'plusminus' && isLast && sum === r) {
+        delete P[player];
+        const m = '❌ Summe darf nicht der Rundenzahl entsprechen.';
+        $('#inputError').textContent=m; UI.toast(m); this.cl(); UI.top(); UI.renderRoundHistory(); Storage.save(); return;
+      }
+      // Leader-Only mode: sole leader as last player cannot make sum === round
+      if (S.mode === 'leaderOnly' && isLast) {
+        const topScore = Math.max(...Object.values(S.scores));
+        const leaders = S.players.filter(p => S.scores[p] === topScore);
+        if (leaders.length === 1 && leaders[0] === player && sum === r) {
+          delete P[player];
+          const m = '❌ Führender darf Summe nicht gleich Stichanzahl machen.';
+          $('#inputError').textContent=m; UI.toast(m); this.cl(); UI.top(); UI.renderRoundHistory(); Storage.save(); return;
+        }
+      }
+
+      S.stepIndex++;
+      if (S.stepIndex >= S.players.length) { S.step='result'; S.stepIndex=0; }
+
+    } else {
+      // Results: goes in seating order (stepIndex 0..n-1)
+      const player = S.players[S.stepIndex];
+      const R = S.results[r-1] || (S.results[r-1] = {});
+      const partial = Object.values(R).reduce((a,b)=>a+(b||0),0);
+      const remain  = r - partial;
+      const isLast  = S.stepIndex === S.players.length - 1;
+
+      if (val > remain) {
+        const m = `❌ Zu hoch: noch ${remain} Stiche übrig.`;
+        $('#inputError').textContent=m; UI.toast(m); this.cl(); return;
+      }
+      if (isLast && val !== remain) {
+        const m = `❌ Muss ${remain} sein (letzte Eingabe).`;
+        $('#inputError').textContent=m; UI.toast(m); this.cl(); return;
+      }
+
+      R[player] = val;
+      S.stepIndex++;
+      if (S.stepIndex >= S.players.length) { S.round++; S.step='prediction'; S.stepIndex=0; }
     }
 
-    /* ---------- UI ---------- */
-    let chartPoints, chartCorrect, chartExtremes, chartAccuracy;
-    let gaWins, gaAvg, gaBest, gaAcc, gaExt;
-    let sdC1, sdC2, sdC3, sdC4;
-    let endCharts=[];
+    this.cl(); recalcScores(); UI.top(); UI.renderRoundHistory(); Storage.save();
+    if (S.round > S.maxRounds && S.step === 'prediction') { Handlers.end(true); }
+  }
+};
 
-    function showView(v){
-      ['setup','game','analytics','history','rules','settings'].forEach(x=>$('#view-'+x)?.classList.toggle('hidden', v!==x));
-      if(v==='analytics'){ UI.updateCharts(); UI.updateGlobalCharts(); }
-      if(v==='history'){ UI.renderSaves(); }
-      if(v==='setup'){ UI.renderSavesHome(); }
+/* ── Handlers ── */
+const Handlers = {
+  start() {
+    const players = $$('#playerInputs .player-input').map(i=>i.value.trim()).filter(Boolean);
+    if (players.length < 2 || players.length > 6) { $('#setupError').textContent='Bitte 2–6 Spieler angeben.'; return; }
+    $('#setupError').textContent = '';
+    Object.assign(S, {
+      players, hiddenBids: $('#hiddenBids').checked,
+      roundRule: $('#segRounds .active')?.dataset.val || 'official',
+      mode:      $('#segMode .active')?.dataset.val || 'classic',
+      round:1, step:'prediction', stepIndex:0,
+      predictions:[], results:[], history:[], savedFinal:false
+    });
+    if (S.roundRule==='custom') {
+      S.customRounds = {3:parseInt($('#r3').value)||20, 4:parseInt($('#r4').value)||15, 5:parseInt($('#r5').value)||12, 6:parseInt($('#r6').value)||10};
     }
+    S.maxRounds = computeMaxRounds();
+    S.scores = Object.fromEntries(players.map(p=>[p,0]));
+    recalcScores(); Storage.save(); showView('game'); UI.top(); UI.renderRoundHistory(); UI.updateCharts();
+  },
+  load() {
+    if (Storage.load()) { S.maxRounds=computeMaxRounds(); recalcScores(); showView('game'); UI.top(); UI.renderRoundHistory(); UI.updateCharts(); }
+  },
+  reset() {
+    if (confirm('Wirklich alles zurücksetzen?')) { Storage.clear(); location.reload(); }
+  },
+  delPred(i) {
+    if (!confirm(`Tipps Runde ${i+1} löschen?`)) return;
+    S.predictions[i]={}; S.results[i]={}; S.round=i+1; S.step='prediction'; S.stepIndex=0;
+    recalcScores(); UI.top(); UI.renderRoundHistory(); Storage.save(); UI.updateCharts();
+  },
+  delRes(i) {
+    if (!confirm(`Ergebnisse Runde ${i+1} löschen?`)) return;
+    S.results[i]={}; S.round=i+1; S.step='result'; S.stepIndex=0;
+    recalcScores(); UI.top(); UI.renderRoundHistory(); Storage.save(); UI.updateCharts();
+  },
+  redoRound() {
+    const r = S.round - 1; if(r<0) return;
+    if (!confirm(`Runde ${S.round} neu eingeben?`)) return;
+    S.predictions[r]={}; S.results[r]={}; S.step='prediction'; S.stepIndex=0;
+    $('#inputError').textContent='';
+    recalcScores(); UI.top(); UI.renderRoundHistory(); Storage.save(); UI.updateCharts();
+  },
+  end(auto=false) {
+    recalcScores();
+    Saves.saveFinished();
+    UI.showEnd();
+    if (!auto) confetti();
+  }
+};
 
-    const UI = {
-      init(){
-        $('#year').textContent=new Date().getFullYear();
+/* ── Confetti ── */
+function confetti() {
+  const cols = ['#7c6fff','#2dd4bf','#f5c842','#f87171','#4ade80','#fb923c','#a78bfa','#38bdf8'];
+  for (let i=0; i<72; i++) {
+    const d = document.createElement('div');
+    d.className = 'confetti-p';
+    d.style.cssText = `width:${7+Math.random()*9}px;height:${12+Math.random()*16}px;left:${5+Math.random()*90}vw;top:-60px;background:${cols[Math.random()*cols.length|0]};`;
+    d.animate([{transform:'translateY(-60px) rotate(0deg)',opacity:1},{transform:`translateY(${90+Math.random()*20}vh) rotate(${300+Math.random()*200}deg)`,opacity:0}],
+      {duration:1100+Math.random()*900,easing:'cubic-bezier(.3,0,.5,1)',fill:'forwards'});
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 2200);
+  }
+}
 
-        // Global nav
-        $$('[data-nav]').forEach(btn=> btn.addEventListener('click', ()=>{
-          showView(btn.dataset.nav);
-          if(window.innerWidth<=900){ $('#sidebar').classList.remove('open'); }
-          if(btn.dataset.nav==='analytics'){ $('#btnAnaGlobal').click(); }
-        }));
+/* ── Swipe end overlay ── */
+(function(){
+  const el = $('#endOverlay');
+  let sx=0,sy=0,dx=0,dy=0,on=false;
+  const s=e=>{const t=e.touches?e.touches[0]:e;sx=t.clientX;sy=t.clientY;dx=dy=0;on=true;};
+  const m=e=>{if(!on)return;const t=e.touches?e.touches[0]:e;dx=t.clientX-sx;dy=t.clientY-sy;};
+  const end=()=>{if(!on)return;on=false;if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(dy)){el.classList.remove('visible');showView('setup');}};
+  el.addEventListener('touchstart',s,{passive:true});
+  el.addEventListener('touchmove',m,{passive:true});
+  el.addEventListener('touchend',end);
+})();
 
-        // Sidebar collapse
-        $('#btnCollapse').onclick = ()=>{
-          const sb = $('#sidebar'), ct = $('#content');
-          if(window.innerWidth<=900){ sb.classList.toggle('open'); return; }
-          sb.classList.toggle('collapsed'); ct.classList.toggle('shifted');
-          Settings.sidebar = sb.classList.contains('collapsed') ? 'collapsed' : 'expanded';
-          Storage.saveSettings();
-        };
-
-        // Settings load
-        Storage.loadSettings();
-        document.documentElement.setAttribute('data-theme', Settings.theme||'light');
-        if(Settings.sidebar==='collapsed'){ $('#sidebar').classList.add('collapsed'); $('#content').classList.add('shifted'); }
-        const t = $('#toggleDark'); if(t) t.checked = (Settings.theme==='dark');
-        $('#toggleDark')?.addEventListener('change',(e)=>{ Settings.theme=e.target.checked?'dark':'light'; document.documentElement.setAttribute('data-theme', Settings.theme); Storage.saveSettings(); });
-
-        // Actions
-        $('#btnStart').onclick=Handlers.start;
-        $('#btnLoad').onclick=Handlers.load;
-        $('#btnReset').onclick=Handlers.reset;
-        $('#btnEnd').onclick=Handlers.end;
-        $('#btnRedoRound').onclick=Handlers.redoRound;
-        $('#btnOpenSaves').onclick=()=>{ showView('history'); };
-        $('#btnHome').onclick=()=>{ location.href='https://pascalasch.github.io/Spiele/Overview.html'; };
-        $('#btnSdClose').onclick = ()=> UI.closeSaveDetail();
-        $('#saveDetail').addEventListener('click', (e)=>{ if(e.target.id==='saveDetail') UI.closeSaveDetail(); });
-
-        // Segmented controls
-        $('#segMode').addEventListener('click', e=>{
-          if(e.target.tagName!=='BUTTON') return;
-          $$('#segMode button').forEach(b=>b.classList.remove('active'));
-          e.target.classList.add('active'); S.mode = e.target.dataset.val; Storage.save();
-        });
-        $('#segRounds').addEventListener('click', e=>{
-          if(e.target.tagName!=='BUTTON') return;
-          $$('#segRounds button').forEach(b=>b.classList.remove('active'));
-          e.target.classList.add('active'); S.roundRule = e.target.dataset.val;
-          $('#customRoundsWrap').classList.toggle('hidden', S.roundRule!=='custom'); Storage.save();
-        });
-
-        if(safeLS.get(saveKey)) $('#btnLoad').classList.remove('hidden');
-
-        document.addEventListener('touchstart',()=>{}, {passive:true});
-
-        UI.renderSavesHome();
-        $('#btnAnaGlobal').click();
-
-        // Parallax movement
-        const layers=$$('.plx');
-        function moveParallax(x,y){
-          const dx=(x/window.innerWidth-0.5), dy=(y/window.innerHeight-0.5);
-          layers.forEach((el,i)=>{ const f=(i+1)*8; el.style.transform=`translate(${dx*f}px, ${dy*f}px) scale(1.05)`; });
-        }
-        window.addEventListener('mousemove',e=>moveParallax(e.clientX,e.clientY),{passive:true});
-        window.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(t) moveParallax(t.clientX,t.clientY); },{passive:true});
-      },
-
-      addNext(el){
-        const c=$('#playerInputs');
-        if(!el.nextElementSibling && el.value.trim()!==''){
-          const n=document.createElement('input');
-          n.className='input w-full px-4 py-4 rounded-xl';
-          n.type='text'; n.placeholder=`Spieler ${c.children.length+1}`;
-          n.oninput=()=>UI.addNext(n);
-          c.appendChild(n);
-        }
-      },
-
-      toast(msg){
-        const t=$('#toast'); const b=t.querySelector('.bubble');
-        b.textContent=msg; t.style.display='block'; b.style.background='var(--glass-bg)'; b.style.color='var(--text)';
-        setTimeout(()=>{ t.style.display='none'; }, 2600);
-      },
-
-      top(){
-        $('#roundProgress').textContent=`${S.round}/${S.maxRounds}`;
-        const dealer=S.players[(S.round-1)%S.players.length]||'–';
-        const starter=S.players[S.round%S.players.length]||'–';
-        $('#dealerLine').innerHTML=`🃏 Kartengeber: <b>${dealer}</b>`;
-        $('#starterLine').innerHTML=`🎤 Ansage beginnt bei: <b>${starter}</b>`;
-        $('#tricksLine').innerHTML=`🎯 Mögliche Stiche: <b>${S.round}</b>`;
-        $('#phaseTitle').textContent=(S.step==='prediction')?'Vorhersage':'Ergebnis';
-        $('#phaseHint').textContent=(S.step==='prediction')?(S.hiddenBids?'Verdeckte Ansagen (zeigen nach letzter Ansage)':'Offene Ansagen'):'Erzielte Stiche eingeben';
-        const current=S.players[(S.round+S.stepIndex)%S.players.length]||'–';
-        $('#whoPrompt').innerHTML=`${(S.step==='prediction')?'Wie viele Stiche sagt':'Wie viele Stiche hat'} <b>${current}</b>?`;
-        if(S.step==='result'){
-          const R=S.results[S.round-1]||{};
-          const partial=Object.values(R).reduce((a,b)=>a+(b||0),0);
-          const remain=Math.max(S.round - partial, 0);
-          $('#remainInfo').textContent = `Verbleibende Stiche: ${remain}`;
-        } else { $('#remainInfo').textContent=''; }
-        $('#inputError').textContent='';
-      },
-
-      tables(){
-        const hdr1=$('#hdr1'), hdr2=$('#hdr2'), body=$('#tbody');
-        hdr1.innerHTML=`<th>Runde</th>${S.players.map(p=>`<th>${p}</th>`).join('')}<th></th>`;
-        hdr2.innerHTML=`<th>Gesamt</th>${S.players.map(p=>`<th>${S.scores[p]||0}</th>`).join('')}<th></th>`;
-        body.innerHTML='';
-        for(let i=S.predictions.length-1;i>=0;i--){
-          const P=S.predictions[i]||{}, R=S.results[i]||{};
-          const allR=Object.keys(R).length===S.players.length;
-
-          if(Object.keys(P).length>0){
-            const tr=document.createElement('tr'); tr.className='row-tip';
-            tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Tipp)</td>`+
-              S.players.map(pl=>{
-                const v=P[pl];
-                const hide=S.hiddenBids && i===S.round-1 && S.step==='prediction' && Object.keys(P).length<S.players.length;
-                return `<td>${(v!=null && !hide)? `<b>${v}</b>` : (v!=null? '•':'-')}</td>`;
-              }).join('') +
-              `<td>${(!allR)? `<button class='underline text-red-500' onclick='Handlers.delPred(${i})'>Tipps löschen</button>`:''}</td>`;
-            body.appendChild(tr);
-          }
-          if(allR){
-            const pts={}; S.players.forEach(pl=>pts[pl]=pointsFor(P[pl]??0,R[pl]??0));
-            const tr=document.createElement('tr'); tr.className='row-res';
-            tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Ergebnis)</td>`+
-              S.players.map(pl=>`<td>${R[pl]}<br><span class='text-xs' style='color:var(--accent)'>${fmt(pts[pl])} Pkt</span></td>`).join('')+
-              `<td><button class='underline text-red-500' onclick='Handlers.delRes(${i})'>Ergebnisse löschen</button></td>`;
-            body.appendChild(tr);
-          }
-        }
-      },
-
-      final(){
-        const scores=S.scores;
-        let max=-Infinity,w=[];
-        S.players.forEach(p=>{ if(scores[p]>max){max=scores[p];w=[p]} else if(scores[p]===max){w.push(p)} });
-        $('#finalResult').innerHTML=(w.length===1)? `🏅 <b>${w[0]}</b> gewinnt mit <b>${max}</b> Punkten.` : `🏅 <b>${w.join(' & ')}</b> teilen sich den Sieg (je <b>${max}</b> Punkte).`;
-
-        let full=0,totalErr=0,errCount=0,corr=Object.fromEntries(S.players.map(p=>[p,0]));
-        for(let i=0;i<S.predictions.length;i++){
-          const P=S.predictions[i]||{}, R=S.results[i]||{};
-          if(Object.keys(P).length===S.players.length && Object.keys(R).length===S.players.length){
-            full++; S.players.forEach(p=>{ const g=P[p]??0,r=R[p]??0; totalErr+=Math.abs(g-r); errCount++; if(g===r) corr[p]++; });
-          }
-        }
-        const avgErr=errCount? (totalErr/errCount).toFixed(2):'0';
-        const maxC=Math.max(...Object.values(corr)), minC=Math.min(...Object.values(corr));
-        const best=S.players.filter(p=>corr[p]===maxC).join(', ')||'-';
-        const worst=S.players.filter(p=>corr[p]===minC).join(', ')||'-';
-        const totalPts=Object.values(S.scores).reduce((a,b)=>a+b,0);
-        const avgRoundPts=full? (totalPts/full).toFixed(1):'0';
-        const lis=[
-          `1. Gespielte Runden: ${full}/${S.maxRounds}`,
-          `2. Durchschnittlicher Vorhersagefehler: ${avgErr}`,
-          `3. Korrekte Tipps: ${S.players.map(p=>`${p}: ${corr[p]}`).join(' | ')}`,
-          `4. Beste Tipp-Genauigkeit: ${best} (${maxC})`,
-          `5. Schwächste Tipp-Genauigkeit: ${worst} (${minC})`,
-          `6. Ø Gesamtpunktgewinn/Runde: ${avgRoundPts}`
-        ];
-        $('#extraStats').innerHTML=`<ul class='list-disc ml-5'>${lis.map(s=>`<li>${s}</li>`).join('')}</ul>`;
-
-        const h=$('#finalHdr'), b=$('#finalBody'); h.innerHTML=`<th>Runde</th>${S.players.map(p=>`<th>${p}</th>`).join('')}`; b.innerHTML='';
-        for(let i=0;i<S.predictions.length;i++){
-          const P=S.predictions[i]||{}, R=S.results[i]||{};
-          if(Object.keys(P).length){ const tr=document.createElement('tr'); tr.className='row-tip'; tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Tipp)</td>`+S.players.map(p=>`<td><b>${P[p]??'-'}</b></td>`).join(''); b.appendChild(tr); }
-          if(Object.keys(R).length===S.players.length){ const pts={}; S.players.forEach(pl=>pts[pl]=pointsFor(P[pl]??0,R[pl]??0)); const tr=document.createElement('tr'); tr.className='row-res'; tr.innerHTML=`<td class='font-bold'>Runde ${i+1} (Ergebnis)</td>`+S.players.map(pl=>`<td>${R[pl]}<br><span class='text-xs' style='color:var(--accent)'>${fmt(pts[pl])} Pkt</span></td>`).join(''); b.appendChild(tr); }
-        }
-      },
-
-      updateEndCharts(){
-        endCharts.forEach(c=>c&&c.destroy()); endCharts=[];
-        const labels=S.predictions.map((_,i)=>`R${i+1}`);
-        const totals=Analytics.perRoundTotals();
-        const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
-
-        const extremes=Analytics.extremes();
-
-        endCharts.push(new Chart($('#endC1'),{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }}));
-        endCharts.push(new Chart($('#endC2'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Punkte', data:S.players.map(p=>S.scores[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
-        endCharts.push(new Chart($('#endC3'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Korrekte Tipps', data:S.players.map(p=>Analytics.correctCounts()[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}}));
-        endCharts.push(new Chart($('#endC4'),{ type:'bar', data:{labels:S.players, datasets:[{label:'Max. Stiche', data:S.players.map(p=>extremes.maxTricks[p])},{label:'Größte Abweichung', data:S.players.map(p=>extremes.maxDev[p])}]}, options:{responsive:true, maintainAspectRatio:false}}));
-      },
-
-      csv(){
-        const rows=[['Round',...S.players.map(p=>`${p} (Tip)`),...S.players.map(p=>`${p} (Res)`)].join(',')];
-        for(let i=0;i<S.predictions.length;i++){
-          const P=S.predictions[i]||{}, R=S.results[i]||{};
-          rows.push([i+1, ...S.players.map(p=>P[p]??''), ...S.players.map(p=>R[p]??'')].join(','));
-        }
-        const blob=new Blob([rows.join('\n')],{type:'text/csv'}); const url=URL.createObjectURL(blob);
-        const a=document.createElement('a'); a.href=url; a.download='wizard_scores.csv'; a.click(); URL.revokeObjectURL(url);
-      },
-
-      renderSaves(){
-        const box=$('#savesList'); const arr=Saves.all();
-        if(!arr.length){ box.innerHTML='<div class="glass p-4 opacity-70">Keine gespeicherten Spiele.</div>'; return; }
-        box.innerHTML=arr.map(e=>{
-          const date=new Date(e.ts).toLocaleString();
-          const rank=Object.entries(e.scores||{}).sort((a,b)=>b[1]-a[1]);
-          const winner=rank.length? rank.filter(x=>x[1]===rank[0][1]).map(x=>x[0]).join(' & ') : '–';
-          return `<div class='glass p-4 flex flex-col gap-2'>
-            <div class='text-sm' style='color:var(--muted)'>${date} · ${e.players.length} Spieler · ${e.rounds} Runden · Modus: ${e.mode}${e.hiddenBids?' · Hidden':''}</div>
-            <div><b>Winner:</b> ${winner}${rank.length? ` (${rank[0][1]} Pkt)` : ''}</div>
-            <div class='text-sm'>${e.players.map(p=>`${p}: ${e.scores?.[p]??0}`).join(' · ')}</div>
-            <div class='flex gap-2 mt-1'>
-              <button class='btn btn-muted' onclick='UI.openSaveDetail("${e.id}")'>🔎 Details</button>
-              <button class='btn btn-danger' onclick='Saves.remove("${e.id}")'>🗑️ Löschen</button>
-            </div>
-          </div>`;
-        }).join('');
-      },
-
-      renderSavesHome(){
-        const box=$('#savesListHome'); if(!box) return;
-        const arr=Saves.all().slice(0,4);
-        if(!arr.length){ box.innerHTML='<div class="opacity-70">Noch keine Spielstände.</div>'; return; }
-        box.innerHTML=arr.map(e=>{
-          const date=new Date(e.ts).toLocaleDateString();
-          const rank=Object.entries(e.scores||{}).sort((a,b)=>b[1]-a[1]);
-          return `<div class='glass p-3'>${date}: <b>${rank[0]?.[0]||'–'}</b>${rank[0]? ` (${rank[0][1]} Pkt)` : ''} – ${e.players.length} Spieler</div>`;
-        }).join('');
-      },
-
-      openSaveDetail(id){
-        const e=Saves.all().find(x=>x.id===id); if(!e) return;
-        $('#sdTitle').textContent = 'Spiel-Details';
-        $('#sdMeta').textContent = new Date(e.ts).toLocaleString() + ` · ${e.players.length} Spieler · ${e.rounds} Runden · Modus: ${e.mode}${e.hiddenBids?' · Hidden':''}`;
-
-        [sdC1,sdC2,sdC3,sdC4].forEach(c=>c&&c.destroy());
-
-        const labels=(e.predictions||[]).map((_,i)=>`R${i+1}`);
-        const totals=Analytics.perRoundTotalsGeneric(e.players,e.predictions||[],e.results||[]);
-        const ds=totals.map((arr,i)=>({ label:e.players[i], data:arr, tension:.25 }));
-
-        const sum=ensureSummaryFromEntry(e);
-
-        sdC1=new Chart($('#sdPoints'),{ type:'line', data:{labels, datasets:ds},
-          options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }});
-
-        const scorePairs=Object.entries(e.scores||{}).sort((a,b)=>b[1]-a[1]);
-        sdC2=new Chart($('#sdScores'),{ type:'bar', data:{labels:scorePairs.map(x=>x[0]), datasets:[{label:'Punkte', data:scorePairs.map(x=>x[1])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
-
-        const corr = sum.correct||{};
-        sdC3=new Chart($('#sdCorrect'),{ type:'bar', data:{labels:e.players, datasets:[{label:'Korrekte Tipps', data:e.players.map(p=>corr[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
-
-        const ex = sum.extremes||{maxTricks:{},maxDev:{}};
-        sdC4=new Chart($('#sdExtremes'),{ type:'bar', data:{labels:e.players, datasets:[{label:'Max. Stiche', data:e.players.map(p=>ex.maxTricks?.[p]||0)},{label:'Größte Abweichung', data:e.players.map(p=>ex.maxDev?.[p]||0)}]}, options:{responsive:true, maintainAspectRatio:false} });
-
-        $('#saveDetail').classList.remove('hidden');
-      },
-      closeSaveDetail(){ [sdC1,sdC2,sdC3,sdC4].forEach(c=>c&&c.destroy()); $('#saveDetail').classList.add('hidden'); },
-
-      _emptyBox(id, text){
-        const box = document.querySelector(`[data-chartbox="${id}"]`);
-        if(!box) return;
-        box.querySelector('.h-240').innerHTML = `<div class="h-240 flex items-center justify-center opacity-70 text-center px-4">${text}</div>`;
-      },
-      _ensureCanvas(id){
-        const box = document.querySelector(`[data-chartbox="${id}"]`);
-        if(!box) return null;
-        const wrap = box.querySelector('.h-240');
-        wrap.innerHTML = `<canvas id="${id}"></canvas>`;
-        return document.getElementById(id);
-      },
-
-      updateCharts(){
-        const havePlayers = S.players.length>=2;
-        const haveAnyRound = S.predictions.some(p=>Object.keys(p||{}).length>0) || S.results.some(r=>Object.keys(r||{}).length>0);
-
-        [chartPoints,chartCorrect,chartExtremes,chartAccuracy].forEach(c=>c&&c.destroy());
-
-        if(!(havePlayers && haveAnyRound)){
-          this._emptyBox('chartPoints','Noch keine Runden – starte ein Spiel.');
-          this._emptyBox('chartCorrect','Noch keine vollständigen Runden.');
-          this._emptyBox('chartExtremes','Noch keine Ergebnisse.');
-          this._emptyBox('chartAccuracy','Noch keine Trefferquoten.');
-          return;
-        }
-
-        const c1=this._ensureCanvas('chartPoints'), c2=this._ensureCanvas('chartCorrect'),
-              c3=this._ensureCanvas('chartExtremes'), c4=this._ensureCanvas('chartAccuracy');
-
-        const labels=S.predictions.map((_,i)=>`R${i+1}`);
-        const totals=Analytics.perRoundTotals();
-        const ds=totals.map((arr,i)=>({ label:S.players[i], data:arr, tension:.25 }));
-
-        const correct=Analytics.correctCounts();
-        const extremes=Analytics.extremes();
-        const accuracy=Analytics.accuracy();
-
-        chartPoints=new Chart(c1,{ type:'line', data:{labels, datasets:ds}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(0,0,0,.08)'}}} }});
-        chartCorrect=new Chart(c2,{ type:'bar', data:{labels:S.players, datasets:[{label:'Korrekte Tipps', data:S.players.map(p=>correct[p])}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
-        chartExtremes=new Chart(c3,{ type:'bar', data:{ labels:S.players, datasets:[{label:'Max. Stiche', data:S.players.map(p=>extremes.maxTricks[p])},{label:'Größte Abweichung', data:S.players.map(p=>extremes.maxDev[p])}]}, options:{responsive:true, maintainAspectRatio:false}});
-        chartAccuracy=new Chart(c4,{ type:'radar', data:{ labels:S.players, datasets:[{label:'Trefferquote %', data:S.players.map(p=>accuracy[p])}]}, options:{responsive:true, maintainAspectRatio:false, scales:{ r:{ beginAtZero:true, max:100 }}}});
-      },
-
-      updateGlobalCharts(){
-        [gaWins,gaAvg,gaBest,gaAcc,gaExt].forEach(c=>c&&c.destroy());
-        const agg = globalAggregates();
-
-        if(!agg.players.length){
-          this._emptyBox('gaWins','Noch keine gespeicherten Spiele.');
-          this._emptyBox('gaAvgScore','—');
-          this._emptyBox('gaBestScore','—');
-          this._emptyBox('gaAccuracy','—');
-          this._emptyBox('gaExtremes','—');
-          return;
-        }
-
-        const players = agg.players.slice(0,16);
-        const idx = players.map(p=> agg.players.indexOf(p));
-        const pick = (arr)=> idx.map(i=> arr[i]);
-
-        const c1=this._ensureCanvas('gaWins'), c2=this._ensureCanvas('gaAvgScore'),
-              c3=this._ensureCanvas('gaBestScore'), c4=this._ensureCanvas('gaAccuracy'),
-              c5=this._ensureCanvas('gaExtremes');
-
-        gaWins = new Chart(c1, { type:'bar',
-          data:{ labels:players, datasets:[{label:'Siege', data: pick(agg.winVals)}] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, title:{display:true, text:`Gespeicherte Spiele: ${agg.totalGames}`}} }
-        });
-        gaAvg = new Chart(c2, { type:'bar',
-          data:{ labels:players, datasets:[{label:'Ø Endpunkte', data: pick(agg.avgScore)}] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
-        });
-        gaBest = new Chart(c3, { type:'bar',
-          data:{ labels:players, datasets:[{label:'Bestscore', data: pick(agg.best)}] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
-        });
-        gaAcc = new Chart(c4, { type:'bar',
-          data:{ labels:players, datasets:[{label:'Ø Trefferquote %', data: pick(agg.avgAcc)}] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:100}} }
-        });
-        gaExt = new Chart(c5, { type:'bar',
-          data:{ labels:players, datasets:[{label:'Max. Stiche', data: pick(agg.maxT)},{label:'Max. Abweichung', data: pick(agg.maxD)}] },
-          options:{ responsive:true, maintainAspectRatio:false }
-        });
-      },
-
-      restart(){ Storage.clear(); location.reload(); }
-    };
-
-    /* ---------- Game flow with centered warnings ---------- */
-    const Game = {
-      buf:'',
-      d(x){ if(this.buf.length<2){ this.buf+=x; $('#numberDisplay').textContent=this.buf; } },
-      cl(){ this.buf=''; $('#numberDisplay').textContent='0'; },
-      ok(){
-        const val=parseInt(this.buf||'0',10);
-        const idx=(S.round+S.stepIndex)%S.players.length;
-        const player=S.players[idx];
-
-        // hard limits
-        if(S.step==='prediction' && val>S.round){
-          const m=`❌ In Runde ${S.round} darf niemand mehr als ${S.round} tippen.`;
-          $('#inputError').textContent=m; UI.toast(m); this.cl(); return;
-        }
-
-        if(S.step==='prediction'){
-          if(!S.predictions[S.round-1]) S.predictions[S.round-1]={};
-          S.predictions[S.round-1][player]=val;
-          S.history.push({type:'pred', r:S.round-1, player, value:val});
-
-          const P=S.predictions[S.round-1];
-          const sum=Object.values(P).reduce((a,b)=>a+b,0);
-          const total=S.round;
-          const isLast=(S.stepIndex===S.players.length-1);
-          $('#inputError').textContent='';
-
-          if(S.mode==='plusminus' && isLast && sum===total){
-            delete P[player]; S.history.pop();
-            const m='❌ Summe darf nicht den möglichen Stichen entsprechen.';
-            $('#inputError').textContent=m; UI.toast(m);
-            this.cl(); UI.top(); UI.tables(); Storage.save(); return;
-          }
-          if(S.mode==='leaderOnly' && isLast){
-            const top=Math.max(...Object.values(S.scores));
-            const leaders=S.players.filter(p=>S.scores[p]===top);
-            if(leaders.length===1 && leaders[0]===player && sum===total){
-              delete P[player]; S.history.pop();
-              const m='❌ Führender darf die Summe nicht „even“ machen.';
-              $('#inputError').textContent=m; UI.toast(m);
-              this.cl(); UI.top(); UI.tables(); Storage.save(); return;
-            }
-          }
-          S.stepIndex++;
-          if(S.stepIndex>=S.players.length){ S.step='result'; S.stepIndex=0; }
-        } else {
-          if(!S.results[S.round-1]) S.results[S.round-1]={};
-          const R=S.results[S.round-1];
-          const partial=Object.values(R).reduce((a,b)=>a+(b||0),0);
-          const remain=S.round - partial;
-
-          if(val>remain){
-            const m=`❌ Zu hoch: Verbleibend ${remain}, eingegeben ${val}. Reihe wird neu gestartet.`;
-            $('#inputError').textContent=m; UI.toast(m);
-            S.results[S.round-1]={}; S.step='result'; S.stepIndex=0;
-            this.cl(); recalcScores(); UI.top(); UI.tables(); Storage.save();
-            return;
-          }
-
-          const isLast=(S.stepIndex===S.players.length-1);
-          if(isLast && val!==remain){
-            const m=`❌ Letzter Eintrag muss ${remain} sein. Reihe wird neu gestartet.`;
-            $('#inputError').textContent=m; UI.toast(m);
-            S.results[S.round-1]={}; S.step='result'; S.stepIndex=0;
-            this.cl(); recalcScores(); UI.top(); UI.tables(); Storage.save();
-            return;
-          }
-
-          R[player]=val;
-          S.history.push({type:'res', r:S.round-1, player, value:val});
-
-          S.stepIndex++;
-          if(S.stepIndex>=S.players.length){
-            S.round++; S.step='prediction'; S.stepIndex=0;
-          }
-        }
-
-        this.cl(); recalcScores(); UI.top(); UI.tables(); Storage.save();
-        if(S.round>S.maxRounds && S.step==='prediction'){ Handlers.end(true); }
-      }
-    };
-
-    /* ---------- Handlers ---------- */
-    const Handlers = {
-      start(){
-        const players=[...document.querySelectorAll('#playerInputs input')].map(i=>i.value.trim()).filter(Boolean);
-        if(players.length<2 || players.length>6){ $('#setupError').textContent='Bitte 2–6 Spieler angeben.'; return; }
-        S.players=players;
-        S.hiddenBids=$('#hiddenBids').checked;
-        S.roundRule = $('#segRounds button.active')?.dataset.val || 'official';
-        S.mode      = $('#segMode button.active')?.dataset.val || 'classic';
-        if(S.roundRule==='custom'){
-          S.customRounds={3:parseInt($('#r3').value||'20',10),4:parseInt($('#r4').value||'15',10),5:parseInt($('#r5').value||'12',10),6:parseInt($('#r6').value||'10',10)};
-        }
-        S.round=1; S.step='prediction'; S.stepIndex=0; S.predictions=[]; S.results=[]; S.history=[]; S.savedFinal=false;
-        S.maxRounds=computeMaxRounds(); S.scores=Object.fromEntries(players.map(p=>[p,0]));
-        recalcScores(); Storage.save(); showView('game'); UI.top(); UI.tables(); UI.updateCharts();
-      },
-      load(){
-        if(Storage.load()){
-          S.maxRounds=computeMaxRounds(); recalcScores(); showView('game'); UI.top(); UI.tables(); UI.updateCharts();
-        }
-      },
-      reset(){ if(confirm('Wirklich alles zurücksetzen?')){ Storage.clear(); location.reload(); } },
-      delPred(i){ if(!confirm(`Tipps in Runde ${i+1} löschen?`)) return;
-        S.predictions[i]={}; S.results[i]={}; S.round=i+1; S.step='prediction'; S.stepIndex=0; S.history.push({type:'wipePred', r:i});
-        recalcScores(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
-      },
-      delRes(i){ if(!confirm(`Ergebnisse in Runde ${i+1} löschen?`)) return;
-        S.results[i]={}; S.round=i+1; S.step='result'; S.stepIndex=0; S.history.push({type:'wipeRes', r:i});
-        recalcScores(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
-      },
-      redoRound(){
-        const r = S.round-1;
-        if(r<0) return;
-        if(!confirm(`Runde ${S.round} neu eingeben?`)) return;
-        S.predictions[r]={}; S.results[r]={}; S.step='prediction'; S.stepIndex=0;
-        $('#inputError').textContent='';
-        recalcScores(); UI.top(); UI.tables(); Storage.save(); UI.updateCharts();
-      },
-      end(auto=false){
-        recalcScores(); UI.final(); $('#endView').classList.remove('hidden');
-        UI.updateEndCharts();
-
-        // Autosave end result once
-        if(!S.savedFinal){ Saves.saveFinished(true); S.savedFinal=true; Storage.save(); }
-
-        // Konfetti bei manuellem Ende
-        if(!auto){
-          const colors=['#6366f1','#38bdf8','#fbbf24','#34d399','#f472b6','#a5b4fc','#818cf8','#fca5a5','#bef264'];
-          for(let i=0;i<64;i++){
-            const d=document.createElement('div'); d.style.position='fixed'; d.style.zIndex=99999; d.style.pointerEvents='none';
-            d.style.width=(8+Math.random()*8)+'px'; d.style.height=(14+Math.random()*16)+'px'; d.style.borderRadius='4px';
-            d.style.left=(8+Math.random()*84)+'vw'; d.style.top='-80px'; d.style.opacity=.92; d.style.background = colors[Math.random()*colors.length|0];
-            d.animate([{ transform:`translateY(-80px) rotate(0deg)`, opacity:1 },{ transform:`translateY(96vh) rotate(340deg)`, opacity:0 }], { duration:1200+Math.random()*800, easing:'cubic-bezier(.4,0,.4,1)', fill:'forwards' });
-            document.body.appendChild(d); setTimeout(()=>d.remove(),2000);
-          }
-        }
-      }
-    };
-
-    /* ---------- Swipe to close EndView (back to Start) ---------- */
-    (function(){
-      const el = document.getElementById('endView');
-      let sx=0, sy=0, dx=0, dy=0, active=false;
-      function start(e){ const t=(e.touches?e.touches[0]:e); sx=t.clientX; sy=t.clientY; dx=dy=0; active=true; }
-      function move(e){ if(!active) return; const t=(e.touches?e.touches[0]:e); dx=t.clientX-sx; dy=t.clientY-sy; }
-      function end(){ if(!active) return; active=false; if(Math.abs(dx)>80 && Math.abs(dx)>Math.abs(dy)){ el.classList.add('hidden'); showView('setup'); } }
-      el.addEventListener('touchstart',start,{passive:true});
-      el.addEventListener('touchmove',move,{passive:true});
-      el.addEventListener('touchend',end);
-      el.addEventListener('pointerdown',start);
-      el.addEventListener('pointermove',move);
-      el.addEventListener('pointerup',end);
-    })();
-
-    /* ---------- Boot ---------- */
-    (function(){
-      try{
-        $('#year').textContent=new Date().getFullYear();
-        UI.init();
-        showView('setup');
-        if(window.innerWidth<=900){ $('#sidebar').classList.remove('collapsed'); $('#content').classList.remove('shifted'); }
-      } catch(e){
-        console.error(e);
-        alert('Init-Fehler: ' + (e?.message || e));
-      }
-    })();
-  </script>
+/* ── Boot ── */
+(function(){
+  try {
+    UI.init();
+    showView('setup');
+  } catch(e) {
+    console.error(e);
+    document.body.insertAdjacentHTML('beforeend',`<div style="position:fixed;inset:0;z-index:9999;background:#0c0e1a;color:#f87171;padding:2rem;font-family:monospace">Init-Fehler: ${e.message}</div>`);
+  }
+})();
+</script>
 </body>
 </html>
